@@ -21,8 +21,10 @@ python-fastapi-template/
 │   │   ├── ticket.py        # Ticket 模型
 │   │   └── comment.py       # Comment 模型
 │   ├── schemas/
-│   │   ├── __init__.py
-│   │   └── item.py          # Pydantic 模式
+│   │   ├── __init__.py      # 匯入所有 schemas
+│   │   ├── user.py          # User 相關 schemas
+│   │   ├── ticket.py        # Ticket 相關 schemas
+│   │   └── comment.py       # Comment 相關 schemas
 │   ├── repositories/
 │   │   ├── __init__.py
 │   │   ├── base.py          # 基礎 repository

@@ -1,37 +1,11 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from app.models.ticket import TicketStatus
+from app.schemas.user import User
 
-# User schemas
-class UserBase(BaseModel):
-    name: str
-    email: str
-
-class UserCreate(UserBase):
-    pass
-
-class User(UserBase):
-    id: int
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-# Comment schemas
-class CommentBase(BaseModel):
-    content: str
-    user_id: int
-
-class CommentCreate(CommentBase):
-    pass
-
-class Comment(CommentBase):
-    id: int
-    ticket_id: int
-    created_at: datetime
-    user: Optional[User] = None
-
-    model_config = ConfigDict(from_attributes=True)
+if TYPE_CHECKING:
+    from app.schemas.comment import Comment, CommentCreate
 
 # Ticket schemas
 class TicketBase(BaseModel):
@@ -53,11 +27,11 @@ class Ticket(TicketBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     user: Optional[User] = None
-    comments: List[Comment] = []
+    comments: List["Comment"] = []
 
     model_config = ConfigDict(from_attributes=True)
 
 # Complex schemas for operations
 class TicketWithInitialComment(BaseModel):
     ticket: TicketCreate
-    initial_comment: CommentCreate
+    initial_comment: "CommentCreate"

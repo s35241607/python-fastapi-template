@@ -6,7 +6,8 @@ from app.models.comment import Comment
 from app.repositories.ticket_repository import TicketRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.comment_repository import CommentRepository
-from app.schemas.ticket import TicketCreate, TicketUpdate, CommentCreate
+from app.schemas.ticket import TicketCreate, TicketUpdate
+from app.schemas.comment import CommentCreate
 
 class TicketService:
     def __init__(self, session: AsyncSession):

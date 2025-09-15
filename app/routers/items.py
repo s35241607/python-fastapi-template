@@ -3,10 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from app.database import get_db
 from app.services.ticket_service import TicketService
-from app.schemas.item import (
-    Ticket, TicketCreate, TicketUpdate, CommentCreate,
-    TicketWithInitialComment, Comment
+from app.schemas.ticket import (
+    Ticket, TicketCreate, TicketUpdate,
+    TicketWithInitialComment
 )
+from app.schemas.comment import Comment, CommentCreate
 from app.models.ticket import TicketStatus
 
 router = APIRouter()
