@@ -17,7 +17,7 @@ class Ticket(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(Text)
-    status = Column(Enum(TicketStatus), default=TicketStatus.OPEN)
+    status = Column(Enum(TicketStatus, name='ticket_status', schema=settings.schema), default=TicketStatus.OPEN)
     user_id = Column(Integer, ForeignKey(f"{settings.schema}.users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -34,6 +34,9 @@ def include_object(object, name, type_, reflected, compare_to):
     elif type_ == "column":
         # 檢查列是否屬於指定 schema 的表
         return object.table.schema == settings.schema if hasattr(object, 'table') else False
+    elif type_ == "type":
+        # 檢查類型是否屬於指定 schema
+        return object.schema == settings.schema if hasattr(object, 'schema') else False
     return True
 
 

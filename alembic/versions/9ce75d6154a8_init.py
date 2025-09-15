@@ -1,8 +1,8 @@
-"""Initial migration: Create ticket schema tables
+"""Init
 
-Revision ID: 65d4f435aaa7
+Revision ID: 9ce75d6154a8
 Revises: 
-Create Date: 2025-09-15 21:28:39.019217
+Create Date: 2025-09-15 22:02:27.232252
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '65d4f435aaa7'
+revision: str = '9ce75d6154a8'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -35,7 +35,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('status', sa.Enum('OPEN', 'IN_PROGRESS', 'CLOSED', name='ticketstatus'), nullable=True),
+    sa.Column('status', sa.Enum('OPEN', 'IN_PROGRESS', 'CLOSED', name='ticket_status', schema='ticket'), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
