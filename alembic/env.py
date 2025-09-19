@@ -27,16 +27,16 @@ def include_object(object, name, type_, reflected, compare_to):
     過濾函數，只包含指定 schema 的對象
     """
     if type_ == "table":
-        return object.schema == settings.schema
+        return object.schema == settings.db_schema
     elif type_ == "index":
         # 檢查索引是否屬於指定 schema 的表
-        return object.table.schema == settings.schema if hasattr(object, 'table') else False
+        return object.table.schema == settings.db_schema if hasattr(object, 'table') else False
     elif type_ == "column":
         # 檢查列是否屬於指定 schema 的表
-        return object.table.schema == settings.schema if hasattr(object, 'table') else False
+        return object.table.schema == settings.db_schema if hasattr(object, 'table') else False
     elif type_ == "type":
         # 檢查類型是否屬於指定 schema
-        return object.schema == settings.schema if hasattr(object, 'schema') else False
+        return object.schema == settings.db_schema if hasattr(object, 'schema') else False
     return True
 
 
@@ -60,7 +60,7 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         include_schemas=False,
         include_object=include_object,
-        version_table_schema=settings.schema
+        version_table_schema=settings.db_schema
     )
 
     with context.begin_transaction():
@@ -73,7 +73,7 @@ def do_run_migrations(connection: Connection) -> None:
         target_metadata=target_metadata,
         include_schemas=False,
         include_object=include_object,
-        version_table_schema=settings.schema
+        version_table_schema=settings.db_schema
     )
 
     with context.begin_transaction():

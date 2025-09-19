@@ -12,13 +12,13 @@ class TicketStatus(str, enum.Enum):
 
 class Ticket(Base):
     __tablename__ = "tickets"
-    __table_args__ = {"schema": settings.schema}
+    __table_args__ = {"schema": settings.db_schema}
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(Text)
-    status = Column(Enum(TicketStatus, name='ticket_status', schema=settings.schema), default=TicketStatus.OPEN)
-    user_id = Column(Integer, ForeignKey(f"{settings.schema}.users.id"), nullable=False)
+    status = Column(Enum(TicketStatus, name='ticket_status', schema=settings.db_schema), default=TicketStatus.OPEN)
+    user_id = Column(Integer, ForeignKey(f"{settings.db_schema}.users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

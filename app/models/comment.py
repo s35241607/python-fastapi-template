@@ -6,12 +6,12 @@ from app.config import settings
 
 class Comment(Base):
     __tablename__ = "comments"
-    __table_args__ = {"schema": settings.schema}
+    __table_args__ = {"schema": settings.db_schema}
 
     id = Column(Integer, primary_key=True, index=True)
     content = Column(Text, nullable=False)
-    ticket_id = Column(Integer, ForeignKey(f"{settings.schema}.tickets.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey(f"{settings.schema}.users.id"), nullable=False)
+    ticket_id = Column(Integer, ForeignKey(f"{settings.db_schema}.tickets.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey(f"{settings.db_schema}.users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # 關聯

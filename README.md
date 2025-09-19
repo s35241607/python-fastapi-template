@@ -2,6 +2,16 @@
 
 一個完整的 FastAPI 專案，使用 router > service > repository 架構，支援 async PostgreSQL 資料庫操作。
 
+## 專案狀態
+
+✅ **Task 001 已完成** - 專案基本結構設定完成
+- 完整的專案資料夾結構
+- FastAPI 應用程式初始化完成
+- CORS 中間件已設定
+- 環境變數配置正確
+- 所有必要依賴已安裝
+- 應用程式可正常啟動 (uv run uvicorn app.main:app)
+
 ## 專案結構
 
 ```
@@ -85,17 +95,21 @@ python init_db.py
 ## 運行應用程式
 
 ```bash
-# 安裝依賴
+# 安裝依賴 (已完成)
 uv sync
 
 # 初始化資料庫
 python init_db.py
 
 # 運行應用程式
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 或使用簡化命令
 python main.py
 ```
 
 應用程式將在 http://localhost:8000 運行。
+API 文檔可在 http://localhost:8000/docs 訪問。
 
 ## API 端點
 
