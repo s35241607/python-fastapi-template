@@ -1,20 +1,19 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CategoryBase(BaseModel):
-    name: str
-    description: str | None = None
+    name: str = Field(min_length=1, max_length=50)
+    description: str | None = Field(None, max_length=255)
 
 
 class CategoryCreate(CategoryBase):
     pass
 
 
-class CategoryUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
+class CategoryUpdate(CategoryBase):
+    pass
 
 
 class Category(CategoryBase):
