@@ -1,15 +1,15 @@
 from sqlalchemy import (
-    Column,
     BigInteger,
-    String,
+    Column,
     DateTime,
-    func,
     ForeignKey,
+    String,
+    func,
 )
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base
 from app.config import settings
+from app.models.base import Base
 
 
 class TicketAttachment(Base):

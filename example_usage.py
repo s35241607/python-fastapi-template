@@ -6,8 +6,11 @@ Ticket System 使用範例
 
 import asyncio
 import json
+
 from fastapi.testclient import TestClient
+
 from app.main import app
+
 
 async def example_usage():
     client = TestClient(app)
@@ -19,15 +22,8 @@ async def example_usage():
 
     print("1. 建立 Ticket 與初始 Comment:")
     ticket_data = {
-        "ticket": {
-            "title": "系統錯誤修復",
-            "description": "應用程式在特定情況下崩潰",
-            "user_id": 1
-        },
-        "initial_comment": {
-            "content": "發現錯誤，需要緊急修復",
-            "user_id": 1
-        }
+        "ticket": {"title": "系統錯誤修復", "description": "應用程式在特定情況下崩潰", "user_id": 1},
+        "initial_comment": {"content": "發現錯誤，需要緊急修復", "user_id": 1},
     }
     print(json.dumps(ticket_data, indent=2, ensure_ascii=False))
 
@@ -36,10 +32,7 @@ async def example_usage():
     print('Body: "in_progress"')
 
     print("\n3. 為 Ticket 添加 Comment:")
-    comment_data = {
-        "content": "已經開始調查問題",
-        "user_id": 2
-    }
+    comment_data = {"content": "已經開始調查問題", "user_id": 2}
     print(json.dumps(comment_data, indent=2, ensure_ascii=False))
 
     print("\n4. 獲取 Ticket 詳細資訊 (包含所有關聯):")
@@ -54,6 +47,7 @@ async def example_usage():
     print("- 複雜 CRUD: 多表關聯操作")
     print("- 自動級聯刪除")
     print("- 狀態追蹤與系統 Comments")
+
 
 if __name__ == "__main__":
     asyncio.run(example_usage())

@@ -1,17 +1,17 @@
 from sqlalchemy import (
-    Column,
     BigInteger,
-    Integer,
+    Column,
     DateTime,
-    func,
-    ForeignKey,
     Enum,
+    ForeignKey,
+    Integer,
     Text,
+    func,
 )
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base
 from app.config import settings
+from app.models.base import Base
 from app.models.enums import ApprovalProcessStepStatus
 
 
@@ -24,7 +24,11 @@ class ApprovalProcessStep(Base):
     step_order = Column(Integer, nullable=False)
     approver_id = Column(BigInteger)
     proxy_id = Column(BigInteger)
-    status = Column(Enum(ApprovalProcessStepStatus, name="approval_process_step_status", schema=settings.db_schema), nullable=False, default=ApprovalProcessStepStatus.PENDING)
+    status = Column(
+        Enum(ApprovalProcessStepStatus, name="approval_process_step_status", schema=settings.db_schema),
+        nullable=False,
+        default=ApprovalProcessStepStatus.PENDING,
+    )
     action_at = Column(DateTime(timezone=True))
     comment = Column(Text)
     created_by = Column(BigInteger)

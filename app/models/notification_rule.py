@@ -1,22 +1,24 @@
 from sqlalchemy import (
-    Column,
     BigInteger,
+    Column,
     DateTime,
-    func,
-    ForeignKey,
     Enum,
+    ForeignKey,
     Table,
+    func,
 )
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base
 from app.config import settings
+from app.models.base import Base
 from app.models.enums import NotificationEvent
 
 notification_rule_users = Table(
     "notification_rule_users",
     Base.metadata,
-    Column("rule_id", BigInteger, ForeignKey(f"{settings.db_schema}.notification_rules.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "rule_id", BigInteger, ForeignKey(f"{settings.db_schema}.notification_rules.id", ondelete="CASCADE"), primary_key=True
+    ),
     Column("user_id", BigInteger, primary_key=True),
     schema=settings.db_schema,
 )
@@ -24,7 +26,9 @@ notification_rule_users = Table(
 notification_rule_roles = Table(
     "notification_rule_roles",
     Base.metadata,
-    Column("rule_id", BigInteger, ForeignKey(f"{settings.db_schema}.notification_rules.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "rule_id", BigInteger, ForeignKey(f"{settings.db_schema}.notification_rules.id", ondelete="CASCADE"), primary_key=True
+    ),
     Column("role_id", BigInteger, primary_key=True),
     schema=settings.db_schema,
 )

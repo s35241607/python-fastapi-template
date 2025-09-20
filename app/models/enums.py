@@ -1,5 +1,6 @@
 import enum
 
+
 class TicketStatus(str, enum.Enum):
     DRAFT = "draft"
     WAITING_APPROVAL = "waiting_approval"
@@ -10,21 +11,25 @@ class TicketStatus(str, enum.Enum):
     CLOSED = "closed"
     CANCELLED = "cancelled"
 
+
 class TicketPriority(str, enum.Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     URGENT = "urgent"
 
+
 class ApprovalProcessStatus(str, enum.Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
 
+
 class ApprovalProcessStepStatus(str, enum.Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+
 
 class TicketEventType(str, enum.Enum):
     STATE_CHANGE = "state_change"
@@ -42,11 +47,13 @@ class TicketEventType(str, enum.Enum):
     LABEL_ADD = "label_add"
     LABEL_REMOVE = "label_remove"
 
+
 class NotificationEvent(str, enum.Enum):
     ON_CREATE = "on_create"
     ON_CLOSE = "on_close"
     ON_STATUS_CHANGE = "on_status_change"
     ON_NEW_COMMENT = "on_new_comment"
+
 
 class TicketVisibility(str, enum.Enum):
     INTERNAL = "internal"

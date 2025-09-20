@@ -18,9 +18,11 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from app.models.base import Base
 from app.config import settings
+from app.models.base import Base
+
 target_metadata = Base.metadata
+
 
 def include_object(object, name, type_, reflected, compare_to):
     """
@@ -28,7 +30,7 @@ def include_object(object, name, type_, reflected, compare_to):
     """
     # 對於 reflected 對象（從數據庫讀取的），只包含目標 schema
     if reflected:
-        if hasattr(object, 'schema') and object.schema:
+        if hasattr(object, "schema") and object.schema:
             return object.schema == settings.db_schema
         # 如果沒有 schema 或為空，可能是 public schema，排除
         return False
@@ -57,7 +59,7 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         include_schemas=False,  # 只考慮目標 schema
         include_object=include_object,
-        version_table_schema=settings.db_schema
+        version_table_schema=settings.db_schema,
     )
 
     with context.begin_transaction():
@@ -66,11 +68,11 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection: Connection) -> None:
     context.configure(
-        connection=connection, 
+        connection=connection,
         target_metadata=target_metadata,
         include_schemas=False,  # 只考慮目標 schema
         include_object=include_object,
-        version_table_schema=settings.db_schema
+        version_table_schema=settings.db_schema,
     )
 
     with context.begin_transaction():

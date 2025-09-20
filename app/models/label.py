@@ -1,16 +1,16 @@
 from sqlalchemy import (
-    Column,
     BigInteger,
+    Column,
+    DateTime,
     String,
     Text,
-    DateTime,
     func,
 )
 from sqlalchemy.orm import relationship
 
 from app.models.base import Base
-from app.models.ticket_template import ticket_template_labels
 from app.models.ticket import ticket_labels
+from app.models.ticket_template import ticket_template_labels
 
 
 class Label(Base):

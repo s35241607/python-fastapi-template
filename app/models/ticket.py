@@ -1,20 +1,20 @@
 from sqlalchemy import (
-    Column,
-    BigInteger,
-    String,
-    Text,
-    DateTime,
-    func,
     JSON,
-    ForeignKey,
-    Table,
+    BigInteger,
+    Column,
+    DateTime,
     Enum,
+    ForeignKey,
+    String,
+    Table,
+    Text,
+    func,
 )
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base
 from app.config import settings
-from app.models.enums import TicketStatus, TicketPriority, TicketVisibility
+from app.models.base import Base
+from app.models.enums import TicketPriority, TicketStatus, TicketVisibility
 
 ticket_categories = Table(
     "ticket_categories",
@@ -44,9 +44,15 @@ class Ticket(Base):
     ticket_template_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.ticket_templates.id", ondelete="SET NULL"))
     approval_template_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.approval_templates.id", ondelete="SET NULL"))
     custom_fields_data = Column(JSON)
-    status = Column(Enum(TicketStatus, name="ticket_status", schema=settings.db_schema), nullable=False, default=TicketStatus.DRAFT)
+    status = Column(
+        Enum(TicketStatus, name="ticket_status", schema=settings.db_schema), nullable=False, default=TicketStatus.DRAFT
+    )
     priority = Column(Enum(TicketPriority, name="ticket_priority", schema=settings.db_schema), default=TicketPriority.MEDIUM)
-    visibility = Column(Enum(TicketVisibility, name="ticket_visibility", schema=settings.db_schema), nullable=False, default=TicketVisibility.INTERNAL)
+    visibility = Column(
+        Enum(TicketVisibility, name="ticket_visibility", schema=settings.db_schema),
+        nullable=False,
+        default=TicketVisibility.INTERNAL,
+    )
     due_date = Column(DateTime(timezone=True))
     created_by = Column(BigInteger)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

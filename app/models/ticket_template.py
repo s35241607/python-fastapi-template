@@ -1,18 +1,18 @@
 from sqlalchemy import (
-    Column,
-    BigInteger,
-    String,
-    Text,
-    DateTime,
-    func,
     JSON,
+    BigInteger,
+    Column,
+    DateTime,
     ForeignKey,
+    String,
     Table,
+    Text,
+    func,
 )
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base
 from app.config import settings
+from app.models.base import Base
 
 ticket_template_categories = Table(
     "ticket_template_categories",

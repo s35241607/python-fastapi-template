@@ -1,11 +1,9 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from app.routers import items, user_endpoint
-from app.database import engine
-from app.models.base import Base
+
 from app.config import settings
-import asyncio
+from app.routers import category_router
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -31,13 +29,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(items.router, prefix="/api/v1", tags=["tickets"])
-app.include_router(items.user_router, prefix="/api/v1/users", tags=["users"])
+app.include_router(category_router.router, prefix="/api/v1/categories", tags=["categories"])
+
 
 @app.get("/")
 async def root():
     return {"message": "Welcome to FastAPI Ticket System"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

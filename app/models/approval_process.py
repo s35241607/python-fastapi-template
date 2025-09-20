@@ -1,16 +1,16 @@
 from sqlalchemy import (
-    Column,
     BigInteger,
-    Integer,
+    Column,
     DateTime,
-    func,
-    ForeignKey,
     Enum,
+    ForeignKey,
+    Integer,
+    func,
 )
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base
 from app.config import settings
+from app.models.base import Base
 from app.models.enums import ApprovalProcessStatus
 
 

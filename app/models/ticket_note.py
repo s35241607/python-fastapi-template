@@ -1,18 +1,18 @@
 from sqlalchemy import (
-    Column,
-    BigInteger,
-    Text,
-    DateTime,
-    func,
     JSON,
-    ForeignKey,
+    BigInteger,
     Boolean,
+    Column,
+    DateTime,
     Enum,
+    ForeignKey,
+    Text,
+    func,
 )
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base
 from app.config import settings
+from app.models.base import Base
 from app.models.enums import TicketEventType
 
 
