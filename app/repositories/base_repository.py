@@ -2,10 +2,11 @@ from typing import Generic, TypeVar, Type, Optional, List, Any, Dict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
-from app.db.base_class import Base
 
-# 泛型定義 (保持不變)
-ModelType = TypeVar("ModelType", bound=Base)
+from app.models.base import Base
+
+# 泛型定義 - 移除 bound 約束，保持簡單
+ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
@@ -15,7 +16,6 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     """
     # model 屬性將由子類別提供
     model: Type[ModelType]
-
     def __init__(self, db: AsyncSession):
         """
         初始化時注入 AsyncSession。

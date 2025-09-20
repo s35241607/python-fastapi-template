@@ -4,7 +4,7 @@ This document provides context for the Gemini Code Assistant to understand the p
 
 ## Project Overview
 
-This project is a FastAPI-based ticket system. It follows a router > service > repository architecture and uses async PostgreSQL for database operations.
+This project is a FastAPI-based ticket system that uses async PostgreSQL for database operations.
 
 *   **Backend Framework:** FastAPI
 *   **Database:** PostgreSQL (using `asyncpg` and `SQLAlchemy`)
@@ -17,6 +17,14 @@ The project is organized into the following main directories:
 *   `app`: Contains the core application logic, including routers, services, repositories, models, and schemas.
 *   `tests`: Contains the project's tests.
 *   `docs`: Contains project documentation.
+
+## Architecture
+
+The project follows a router > service > repository architecture.
+
+*   **Routers:** Depend only on services. They handle incoming requests and call the appropriate service methods.
+*   **Services:** Depend only on repositories. They contain the business logic and orchestrate data access through repositories.
+*   **Repositories:** Depend on the `AsyncSession`. They provide an abstraction layer for data access and interact directly with the database. All repositories inherit from a `BaseRepository`.
 
 ## Building and Running
 
