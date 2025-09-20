@@ -1,83 +1,66 @@
 # Gemini Code Assistant Context
 
-This document provides context for the Gemini Code Assistant to understand the project structure, conventions, and tasks.
+This brief guides assistants to be productive in this repo immediately.
 
-## Project Overview
+## Overview
 
-This project is a FastAPI-based ticket system that uses async PostgreSQL for database operations.
-
-*   **Backend Framework:** FastAPI
-*   **Database:** PostgreSQL (using `asyncpg` and `SQLAlchemy`)
-*   **Dependency Management:** `uv`
-*   **Linting and Formatting:** `ruff`
-*   **Type Checking:** `mypy`
-
-The project is organized into the following main directories:
-
-*   `app`: Contains the core application logic, including routers, services, repositories, models, and schemas.
-*   `tests`: Contains the project's tests.
-*   `docs`: Contains project documentation.
+- Backend: FastAPI + SQLAlchemy 2.0 (async)
+- DB: Default SQLite (aiosqlite) via `app.database`; switch to PostgreSQL by setting `DATABASE_URL` (asyncpg)
+- Tooling: `uv` (deps/runtime), `ruff` (lint/format), `mypy` (types), `pytest`
+- Domain: Enterprise ticketing with `ticket` schema (Alembic migrations restricted to this schema)
 
 ## Architecture
 
-The project follows a router > service > repository architecture.
+Router → Service → Repository pattern:
+- Routers (FastAPI) handle validation and delegate to services
+- Services hold business logic and orchestrate repositories
+- Repositories receive `AsyncSession` in ctor and provide CRUD; see `repositories/base_repository.py`
 
-*   **Routers:** Depend only on services. They handle incoming requests and call the appropriate service methods.
-*   **Services:** Depend only on repositories. They contain the business logic and orchestrate data access through repositories.
-*   **Repositories:** Depend on the `AsyncSession`. They provide an abstraction layer for data access and interact directly with the database. All repositories inherit from a `BaseRepository`.
+Key models: see `app/models` (enums, ticket, category, labels, approvals). All tables have audit fields and soft-delete columns.
 
-## Building and Running
+## Runbook
 
-### 1. Environment Setup
+```pwsh
+# Install deps
+uv sync
 
-1.  Copy `.env.example` to `.env` and update the `DATABASE_URL` and `SECRET_KEY`.
-2.  Install dependencies using `uv`:
+# Create tables (uses app.database engine; SQLite by default)
+uv run python init_db.py
 
-    ```bash
-    uv sync
-    ```
+# Dev server
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-### 2. Database Initialization
-
-Run the following command to create the database tables:
-
-```bash
-python init_db.py
+# Tests and quality
+uv run pytest
+uv run ruff check . --fix
+uv run ruff format .
+uv run mypy .
 ```
 
-### 3. Running the Application
+Alembic is configured (see `alembic/env.py`) to include only objects in `settings.db_schema` (default `ticket`). Update `alembic.ini` `sqlalchemy.url` to a reachable PostgreSQL when running migrations.
 
-To run the application in development mode with auto-reload, use the following command:
+## Auth and Permissions
 
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
+- Bearer JWT required by protected routers; in dev, `get_user_id_from_jwt` decodes without signature verification and reads `sub` as user id.
+- Visibility and permission rules are defined in `docs/SPEC.md`; data structures exist in models (e.g., `ticket_view_permissions`).
 
-Alternatively, you can use the simplified command:
+## Implemented Endpoints (now)
 
-```bash
-python main.py
-```
+- Public: `GET /` → welcome payload
+- Categories: `/api/v1/categories` CRUD (requires Bearer)
 
-The application will be available at `http://localhost:8000`, and the API documentation can be accessed at `http://localhost:8000/docs`.
+Use `category_router.py` + `category_service.py` + `category_repository.py` as the pattern to add Tickets/Approvals/Labels routes.
 
-### 4. Running Tests
+## Conventions & Gotchas
 
-To run the test suite, use the following command:
+- All models are in `ticket` schema; ensure `__table_args__ = {"schema": settings.db_schema}` when adding tables (or use existing patterns)
+- Use JSON fields for flexible data (`custom_fields_data`, `event_details`)
+- Enums live in `app/models/enums.py` and are schema-qualified in Alembic
+- Always pass `user_id` on create/update to populate audit fields when applicable
+- Prefer soft-delete; repositories include helpers
+- For multi-table updates (e.g., approval flow), wrap in a transaction (`AsyncSession`)
 
-```bash
-pytest
-```
+## Troubleshooting
 
-## Development Conventions
-
-*   **Coding Style:** The project uses `ruff` for linting and formatting. The configuration can be found in the `pyproject.toml` file.
-*   **Type Checking:** The project uses `mypy` for static type checking. The configuration can be found in the `pyproject.toml` file.
-*   **API Endpoints:** API endpoints are defined in the `app/routers` directory. The `README.md` file lists the following endpoints, which are likely defined in a file that is currently inaccessible:
-
-    *   `POST /api/v1/tickets/`: Create a ticket and add an initial comment.
-    *   `GET /api/v1/tickets/`: Get all tickets (including user and comments).
-    *   `GET /api/v1/tickets/{ticket_id}`: Get a specific ticket's details.
-    *   `PUT /api/v1/tickets/{ticket_id}/status`: Update a ticket's status.
-    *   `DELETE /api/v1/tickets/{ticket_id}`: Delete a ticket and all its comments.
-    *   `POST /api/v1/tickets/{ticket_id}/comments/`: Add a comment to a ticket.
+- Uvicorn exits (code 1): verify `.env` `DATABASE_URL` or start with default SQLite and run `uv run python init_db.py`
+- Alembic missing objects: ensure you’re targeting the `ticket` schema and that models include schema in `__table_args__`

@@ -1,167 +1,106 @@
 # FastAPI Ticket System
 
-一個完整的 FastAPI 專案，使用 router > service > repository 架構，支援 async PostgreSQL 資料庫操作。
+一個以 FastAPI 建構的企業級工單系統樣板，採用 router > service > repository 架構，支援 SQLAlchemy 2.0 非同步 ORM。資料庫預設為 SQLite（便於本機開發），可透過 `DATABASE_URL` 切換到 PostgreSQL（搭配 asyncpg）。
 
-## 專案狀態
+## 目前狀態
 
-✅ **Task 001 已完成** - 專案基本結構設定完成
-- 完整的專案資料夾結構
-- FastAPI 應用程式初始化完成
-- CORS 中間件已設定
-- 環境變數配置正確
-- 所有必要依賴已安裝
-- 應用程式可正常啟動 (uv run uvicorn app.main:app)
+✅ 架構與基礎元件已就緒：
+- FastAPI 應用初始化、CORS 設定
+- 非同步資料庫與 DI session（`app.database.get_db`）
+- Alembic 已設定僅針對 `ticket` schema 的遷移
+- 路由：`/` 公開路由、`/api/v1/categories` 類別 CRUD（JWT Bearer 依賴，但開發模式不驗證簽章）
 
-## 專案結構
+## 專案結構（關鍵檔案）
 
 ```
-python-fastapi-template/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI 應用程式
-│   ├── config.py            # 設定和環境變數
-│   ├── database.py          # 資料庫連線
-│   ├── routers/
-│   │   ├── __init__.py
-│   │   └── items.py         # Ticket 路由 (改名為 tickets)
-│   ├── models/
-│   │   ├── __init__.py      # 匯入所有模型
-│   │   ├── base.py          # SQLAlchemy 基礎模型
-│   │   ├── user.py          # User 模型
-│   │   ├── ticket.py        # Ticket 模型
-│   │   └── comment.py       # Comment 模型
-│   ├── schemas/
-│   │   ├── __init__.py      # 匯入所有 schemas
-│   │   ├── user.py          # User 相關 schemas
-│   │   ├── ticket.py        # Ticket 相關 schemas
-│   │   └── comment.py       # Comment 相關 schemas
-│   ├── repositories/
-│   │   ├── __init__.py
-│   │   ├── base.py          # 基礎 repository
-│   │   ├── user_repository.py
-│   │   ├── ticket_repository.py
-│   │   └── comment_repository.py
-│   └── services/
-│       ├── __init__.py
-│       └── ticket_service.py # 業務邏輯服務
-├── tests/
-│   ├── __init__.py
-│   └── test_main.py         # 測試文件
-├── specs/
-│   └── 001-fastapi-api-ticket/
-├── .env                     # 環境變數
-├── .env.example             # 環境變數範例
-├── init_db.py               # 資料庫初始化腳本
-├── main.py                  # 應用程式入口點
-├── pyproject.toml           # 專案依賴
-├── uv.lock                  # uv 鎖定文件
-└── README.md
+app/
+  main.py           # FastAPI 應用、CORS、例外處理、路由掛載
+  config.py         # 設定（env：app_name、app_version、debug、database_url、db_schema）
+  database.py       # Async engine/session、get_db DI；預設 SQLite
+  auth/dependencies.py  # get_user_id_from_jwt（開發模式不驗簽）
+  routers/
+    public_router.py    # GET /
+    category_router.py  # /api/v1/categories CRUD（依賴 get_user_id_from_jwt）
+  services/
+    category_service.py # 業務邏輯（使用 Repository）
+  repositories/
+    base_repository.py  # 泛型 CRUD、軟刪除欄位支援
+    category_repository.py
+  models/
+    base.py, enums.py, ticket.py, category.py, ... # 皆位於 ticket schema
+alembic/               # 遷移（已過濾至 ticket schema）
+docs/SPEC.md           # 詳細規格與流程
+tests/test_main.py     # 範例測試
+main.py                # 本機啟動入口（同 uvicorn）
 ```
 
-## 架構說明
+## 快速開始
 
-### Router > Service > Repository 模式
-
-1. **Router 層**: 處理 HTTP 請求，驗證輸入，調用 Service
-2. **Service 層**: 包含業務邏輯，協調多個 Repository 操作
-3. **Repository 層**: 處理資料存取，與資料庫互動
-
-### Async PostgreSQL
-
-- 使用 SQLAlchemy 2.0 async 功能
-- asyncpg 作為資料庫驅動
-- 支援非同步資料庫操作
-
-## 環境變數
-
-複製 `.env.example` 到 `.env` 並設定：
-
-```bash
-DATABASE_URL=postgresql+asyncpg://username:password@localhost/ticket_db
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-```
-
-## 資料庫設定
-
-1. 建立 PostgreSQL 資料庫
-2. 更新 `.env` 中的 `DATABASE_URL`
-3. 運行初始化腳本：
-
-```bash
-python init_db.py
-```
-
-## 運行應用程式
-
-```bash
-# 安裝依賴 (已完成)
+```pwsh
+# 安裝相依
 uv sync
 
-# 初始化資料庫
-python init_db.py
+# 初始化資料庫（依 app.database 設定；預設 SQLite 建表）
+uv run python init_db.py
 
-# 運行應用程式
+# 啟動開發伺服器
 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-# 或使用簡化命令
-python main.py
+# 執行測試
+uv run pytest
+
+# 品質工具
+uv run ruff check . --fix
+uv run ruff format .
+uv run mypy .
 ```
 
-應用程式將在 http://localhost:8000 運行。
-API 文檔可在 http://localhost:8000/docs 訪問。
+服務將於 http://localhost:8000 提供；Swagger UI 在 http://localhost:8000/docs。
 
-## API 端點
+## 環境變數（`.env`）
 
-### Tickets
-
-- `POST /api/v1/tickets/`: 建立 ticket 並添加初始 comment
-- `GET /api/v1/tickets/`: 獲取所有 tickets (包含 user 和 comments)
-- `GET /api/v1/tickets/{ticket_id}`: 獲取特定 ticket 詳細資訊
-- `PUT /api/v1/tickets/{ticket_id}/status`: 更新 ticket 狀態
-- `DELETE /api/v1/tickets/{ticket_id}`: 刪除 ticket 及其所有 comments
-- `POST /api/v1/tickets/{ticket_id}/comments/`: 為 ticket 添加 comment
-
-## 複雜 CRUD 案例
-
-### 建立 Ticket 與初始 Comment
-```json
-POST /api/v1/tickets/
-{
-  "ticket": {
-    "title": "系統錯誤",
-    "description": "應用程式崩潰",
-    "user_id": 1
-  },
-  "initial_comment": {
-    "content": "發現系統錯誤，需要修復",
-    "user_id": 1
-  }
-}
+```env
+# 若未提供，預設使用 SQLite：sqlite+aiosqlite:///./test.db
+DATABASE_URL=postgresql+asyncpg://postgres:password@localhost/postgres
+SECRET_KEY=your-secret-key-here
+DEBUG=true
 ```
 
-### 更新 Ticket 狀態 (自動添加系統 Comment)
-```json
-PUT /api/v1/tickets/1/status?user_id=1
-"in_progress"
-```
+> Alembic 的 `alembic.ini` 已預設連線至 PostgreSQL；若使用 Alembic 進行遷移，請確保資料庫可連線並與 `app.config.settings.db_schema` 一致（預設 `ticket`）。
 
-### 刪除 Ticket (級聯刪除 Comments)
-```json
-DELETE /api/v1/tickets/1?user_id=1
-```
+## 認證與權限
 
-## 測試
+- 以 Bearer JWT 驗證；在 `app.auth.dependencies.get_user_id_from_jwt` 中為開發模式，未驗證簽章，僅讀取 `sub` 作為使用者 ID。
+- 權限與可見性（`internal`/`restricted`）與審計軌跡、簽核流程等完整規格，請參考 `docs/SPEC.md` 與模型定義（`app/models`）。
 
-```bash
-# 運行測試
-pytest
-```
+## 已提供的 API 範例
 
-## 資料庫模型
+- `GET /`：健康與歡迎訊息（public）
+- `POST /api/v1/categories/`：建立分類（需要 Bearer）
+- `GET /api/v1/categories/`：取得所有分類
+- `GET /api/v1/categories/{id}`：取得單一分類
+- `PUT /api/v1/categories/{id}`：更新分類
+- `DELETE /api/v1/categories/{id}`：軟刪除分類
+- `DELETE /api/v1/categories/{id}/hard`：硬刪除（若實作）
 
-- **User**: 用戶資訊
-- **Ticket**: 工單，包含狀態追蹤
-- **Comment**: 工單評論，支援多用戶
+> Tickets/Approvals/Labels 等完整資源的資料模型與遷移已備妥，路由與服務可依 `category` 範例擴充。
 
-所有操作都是非同步的，並支援複雜的關聯查詢。
+## 架構與慣例
+
+- Router 只處理輸入驗證與委派；Service 負責業務邏輯；Repository 專注資料存取（以 session 注入，見 `BaseRepository`）。
+- 共同欄位：`created_by/at`、`updated_by/at`、`deleted_by/at`（軟刪除）。
+- Enum 與關聯表集中於 `app/models/enums.py` 與多對多中介表（如 `ticket_categories`, `ticket_labels`）。
+- 需要多表變更的業務流程請使用交易（`AsyncSession`）。
+
+## Alembic 遷移
+
+- 已設定只產生/比對 `ticket` schema 的物件（參見 `alembic/env.py` 的 `include_object`）。
+- 使用前請確認 `alembic.ini` 的 `sqlalchemy.url` 指向可用的 PostgreSQL。
+
+## 疑難排解
+
+- 若啟動 `uvicorn` 失敗（Exit Code 1），請先檢查 `.env` 中 `DATABASE_URL` 與實際連線設定；或先使用預設 SQLite 並執行 `uv run python init_db.py` 以建表。
+
+---
+
+本樣板旨在快速搭建企業級工單系統後端雛型，詳細業務流程與事件規格請參閱 `docs/SPEC.md`。
