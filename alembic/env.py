@@ -23,19 +23,42 @@ from app.models.base import Base
 
 target_metadata = Base.metadata
 
+# 設定 target_metadata 的 schema
+target_metadata.schema = settings.db_schema
+
 
 def include_object(object, name, type_, reflected, compare_to):
     """
     過濾函數，只包含指定 schema 的對象
     """
-    # 對於 reflected 對象（從數據庫讀取的），只包含目標 schema
-    if reflected:
-        if hasattr(object, "schema") and object.schema:
-            return object.schema == settings.db_schema
-        # 如果沒有 schema 或為空，可能是 public schema，排除
-        return False
+    # 對於表對象的處理
+    if type_ == "table":
+        # 如果是從資料庫反射的表
+        if reflected:
+            # 只包含目標 schema 的表
+            return hasattr(object, "schema") and object.schema == settings.db_schema
+        else:
+            # 如果是我們模型定義的表，檢查其 schema
+            return hasattr(object, "schema") and object.schema == settings.db_schema
+    
+    # 對於索引、外鍵等其他對象
+    if type_ in ("index", "foreign_key_constraint", "unique_constraint", "check_constraint"):
+        # 檢查關聯的表是否在目標 schema 中
+        if hasattr(object, "table") and hasattr(object.table, "schema"):
+            return object.table.schema == settings.db_schema
+    
+    # 對於其他類型的對象，使用預設行為
+    return True
 
-    # 對於我們的模型定義的對象，總是包含
+
+def include_name(name, type_, parent_names):
+    """
+    過濾名稱，只包含我們關心的對象
+    """
+    # 對於 schema 名稱的過濾
+    if type_ == "schema":
+        return name == settings.db_schema
+    
     return True
 
 
@@ -57,8 +80,9 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        include_schemas=False,  # 只考慮目標 schema
+        include_schemas=True,  # 允許包含 schema
         include_object=include_object,
+        include_name=include_name,
         version_table_schema=settings.db_schema,
     )
 
@@ -70,8 +94,9 @@ def do_run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        include_schemas=False,  # 只考慮目標 schema
+        include_schemas=True,  # 允許包含 schema
         include_object=include_object,
+        include_name=include_name,
         version_table_schema=settings.db_schema,
     )
 

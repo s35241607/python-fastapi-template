@@ -77,6 +77,14 @@ app.include_router(public_router.router, dependencies=[])
 
 app.include_router(category_router.router, prefix="/api/v1/categories", tags=["categories"])
 
+# 新增檔案附件路由 (暫時註釋)
+# from app.routers import attachment_router
+# app.include_router(attachment_router.router, prefix="/api/v1/attachments", tags=["attachments"])
+
+# 新增工單路由
+from app.routers import ticket_router
+app.include_router(ticket_router.router, prefix="/api/v1/tickets", tags=["tickets"])
+
 
 if __name__ == "__main__":
     import uvicorn
