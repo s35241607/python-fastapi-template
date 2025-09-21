@@ -12,8 +12,7 @@ class CategoryService:
         self.category_repo = CategoryRepository(session)
 
     async def create_category(self, category_data: CategoryCreate, user_id: int | None = None) -> Category:
-        category = Category(**category_data.model_dump())
-        return await self.category_repo.create(category, user_id)
+        return await self.category_repo.create(obj_in=category_data, user_id=user_id)
 
     async def get_category(self, category_id: int) -> Category | None:
         return await self.category_repo.get_by_id(category_id)
@@ -22,10 +21,10 @@ class CategoryService:
         return await self.category_repo.get_all()
 
     async def update_category(self, category_id: int, category_data: CategoryUpdate, user_id: int | None = None) -> Category | None:
-        return await self.category_repo.update(category_id, user_id=user_id, **category_data.model_dump(exclude_unset=True))
+        return await self.category_repo.update(obj_id=category_id, obj_in=category_data, user_id=user_id)
 
-    async def soft_delete_category(self, category_id: int, user_id: int | None = None) -> bool:
-        return await self.category_repo.soft_delete(category_id, user_id)
+    async def soft_delete_category(self, category_id: int, user_id: int | None = None) -> Category | None:
+        return await self.category_repo.soft_delete(obj_id=category_id, user_id=user_id)
 
-    async def hard_delete_category(self, category_id: int) -> bool:
-        return await self.category_repo.hard_delete(category_id)
+    async def hard_delete_category(self, category_id: int) -> Category | None:
+        return await self.category_repo.delete(obj_id=category_id)
