@@ -1,15 +1,19 @@
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
 
 from app.models.category import Category
 from app.repositories.category_repository import CategoryRepository
 from app.schemas.category import CategoryCreate, CategoryUpdate
-
-
 class CategoryService:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        self.category_repo = CategoryRepository(session)
+    def __init__(self, category_repo: CategoryRepository = Depends(CategoryRepository)):
+        """Service is constructed with a CategoryRepository instance.
+
+        Contract:
+        - inputs: CategoryRepository
+        - outputs: domain models (Category) or primitives
+        - error modes: passes through repository exceptions as appropriate
+        """
+        self.category_repo = category_repo
 
     async def create_category(self, category_data: CategoryCreate, user_id: int | None = None) -> Category:
         category = Category(**category_data.model_dump())
