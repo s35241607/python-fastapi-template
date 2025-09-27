@@ -1,9 +1,10 @@
-
 from fastapi import Depends
 
 from app.models.category import Category
 from app.repositories.category_repository import CategoryRepository
 from app.schemas.category import CategoryCreate, CategoryUpdate
+
+
 class CategoryService:
     def __init__(self, category_repo: CategoryRepository = Depends(CategoryRepository)):
         """Service is constructed with a CategoryRepository instance.
@@ -25,7 +26,9 @@ class CategoryService:
     async def get_all_categories(self) -> list[Category]:
         return await self.category_repo.get_all()
 
-    async def update_category(self, category_id: int, category_data: CategoryUpdate, user_id: int | None = None) -> Category | None:
+    async def update_category(
+        self, category_id: int, category_data: CategoryUpdate, user_id: int | None = None
+    ) -> Category | None:
         return await self.category_repo.update(category_id, user_id=user_id, **category_data.model_dump(exclude_unset=True))
 
     async def soft_delete_category(self, category_id: int, user_id: int | None = None) -> bool:

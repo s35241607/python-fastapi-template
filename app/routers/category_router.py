@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.auth.dependencies import get_user_id_from_jwt
 from app.schemas.category import Category, CategoryCreate, CategoryUpdate
 from app.services.category_service import CategoryService
-from app.auth.dependencies import get_user_id_from_jwt
 
 router = APIRouter(dependencies=[Depends(get_user_id_from_jwt)])
 
 
 @router.post("/", response_model=Category)
-async def create_category(category: CategoryCreate, services: CategoryService = Depends(CategoryService), user_id: int = Depends(get_user_id_from_jwt)):
+async def create_category(
+    category: CategoryCreate, services: CategoryService = Depends(CategoryService), user_id: int = Depends(get_user_id_from_jwt)
+):
     return await services.create_category(category, user_id)
 
 
@@ -29,7 +31,10 @@ async def read_category(category_id: int, services: CategoryService = Depends(Ca
 
 @router.put("/{category_id}", response_model=Category)
 async def update_category(
-    category_id: int, category: CategoryUpdate, services: CategoryService = Depends(CategoryService), user_id: int = Depends(get_user_id_from_jwt)
+    category_id: int,
+    category: CategoryUpdate,
+    services: CategoryService = Depends(CategoryService),
+    user_id: int = Depends(get_user_id_from_jwt),
 ):
     db_category = await services.update_category(category_id, category, user_id)
     if db_category is None:
@@ -38,7 +43,9 @@ async def update_category(
 
 
 @router.delete("/{category_id}", response_model=dict)
-async def soft_delete_category(category_id: int, services: CategoryService = Depends(CategoryService), user_id: int = Depends(get_user_id_from_jwt)):
+async def soft_delete_category(
+    category_id: int, services: CategoryService = Depends(CategoryService), user_id: int = Depends(get_user_id_from_jwt)
+):
     if not await services.soft_delete_category(category_id, user_id):
         raise HTTPException(status_code=404, detail="Category not found")
     return {"message": "Category deleted successfully"}

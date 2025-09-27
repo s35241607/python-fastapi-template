@@ -35,7 +35,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
         result = await self.db.execute(statement)  # 使用 self.db
         return result.scalar_one_or_none()
-    
+
     async def get_all(self, *, include_deleted: bool = False) -> list[ModelType]:
         statement = select(self.model)
         if not include_deleted:

@@ -1,13 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, HTTPBearer
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from fastapi.security import OAuth2PasswordBearer
 
 from app.config import settings
-from app.routers import category_router, public_router
-from app.auth.dependencies import get_user_id_from_jwt
+from app.handlers.error_handlers import register_exception_handlers
+from app.routers import category_router, public_router, test_router
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -39,6 +36,10 @@ app = FastAPI(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+# Register exception handlers BEFORE adding middleware
+register_exception_handlers(app)
+
+
 # CORS 中間件設定
 app.add_middleware(
     CORSMiddleware,
@@ -48,32 +49,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc: RequestValidationError):
-    errors = []
-    for error in exc.errors():
-        # Extract the field name from 'loc'
-        field = ".".join([str(loc) for loc in error["loc"] if str(loc) != "body"])
-        
-        errors.append({
-            "field": field,
-            "message": error["msg"], # Keep original English message
-            "type": error["type"],
-        })
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": "Validation Error", "errors": errors},
-    )
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc: Exception):
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "An unexpected error occurred."},
-    )
 
 # Mount public routes without global dependencies
 app.include_router(public_router.router, dependencies=[])
+
+# Test router to inspect JWT payloads (dev behavior: no signature verification)
+app.include_router(test_router.router, prefix="/api/v1/test", tags=["test"])
 
 app.include_router(category_router.router, prefix="/api/v1/categories", tags=["categories"])
 

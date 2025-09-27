@@ -2,4 +2,19 @@
     "python.defaultInterpreterPath": "./.venv/Scripts/python.exe",
     "python.terminal.activateEnvironment": true,
     "python.analysis.typeCheckingMode": "strict"
+    ,
+    // Enable format on save and prefer ruff as the formatter. If you use the "Ruff"
+    // extension (charliermarsh.ruff), VS Code will use it. python.formatting.provider
+    // is also set to "ruff" for tools that read that setting.
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "python.formatting.provider": "ruff",
+
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "editor.codeActionsOnSave": {
+        "source.fixAll.ruff": "explicit",
+        "source.organizeImports.ruff": "explicit"
+    }
 }
