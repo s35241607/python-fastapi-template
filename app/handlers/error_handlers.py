@@ -7,6 +7,7 @@ from typing import Any, cast
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
@@ -20,6 +21,7 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     # Register most specific exceptions first
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(IntegrityError, integrity_error_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 
@@ -52,6 +54,97 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
     )
 
     return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response.model_dump())
+
+
+async def integrity_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle database integrity errors with appropriate HTTP status codes."""
+
+    integrity_error = cast(IntegrityError, exc)
+
+    # Check if it's a PostgreSQL error with error code
+    error_code = None
+    error_message = str(integrity_error)
+
+    if hasattr(integrity_error, "orig") and integrity_error.orig and hasattr(integrity_error.orig, "pgcode"):
+        error_code = getattr(integrity_error.orig, "pgcode", None)
+
+    if error_code == "23505":  # unique_violation
+        # Try to extract field name from error message
+        field_name = "unknown"
+        if "Key (" in error_message and ")=" in error_message:
+            start = error_message.find("Key (") + 5
+            end = error_message.find(")=", start)
+            if end > start:
+                field_name = error_message[start:end]
+
+        response = ErrorResponse(
+            message="Duplicate entry",
+            code=status.HTTP_409_CONFLICT,
+            errors=[
+                ErrorDetail(
+                    field=field_name,
+                    message=f"A record with this {field_name} already exists.",
+                    type="unique_constraint_violation",
+                )
+            ],
+        )
+
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=response.model_dump())
+
+    elif error_code == "23503":  # foreign_key_violation
+        response = ErrorResponse(
+            message="Foreign key constraint violation",
+            code=status.HTTP_400_BAD_REQUEST,
+            errors=[
+                ErrorDetail(
+                    field="__root__",
+                    message="Cannot delete or update this record because it is referenced by other data.",
+                    type="foreign_key_violation",
+                )
+            ],
+        )
+
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response.model_dump())
+
+    elif error_code == "23502":  # not_null_violation
+        # Try to extract column name
+        column_name = "unknown"
+        if "column" in error_message.lower():
+            # Simple parsing - could be improved
+            parts = error_message.split()
+            for i, part in enumerate(parts):
+                if part.lower() == "column":
+                    column_name = parts[i + 1].strip('"') if i + 1 < len(parts) else "unknown"
+                    break
+
+        response = ErrorResponse(
+            message="Required field missing",
+            code=status.HTTP_400_BAD_REQUEST,
+            errors=[
+                ErrorDetail(
+                    field=column_name,
+                    message=f"The field '{column_name}' is required and cannot be null.",
+                    type="not_null_violation",
+                )
+            ],
+        )
+
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response.model_dump())
+
+    # For other integrity errors, treat as bad request
+    response = ErrorResponse(
+        message="Database constraint violation",
+        code=status.HTTP_400_BAD_REQUEST,
+        errors=[
+            ErrorDetail(
+                field="__root__",
+                message="The operation violates database constraints.",
+                type="integrity_error",
+            )
+        ],
+    )
+
+    return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response.model_dump())
 
 
 async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
