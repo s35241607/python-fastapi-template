@@ -19,7 +19,9 @@ class CategoryUpdate(CategoryBase):
 class CategoryRead(CategoryBase):
     id: int
     created_at: datetime
+    created_by: int | None = None
     updated_at: datetime | None = None
+    updated_by: int | None = None
 
     class Config:
         from_attributes = True

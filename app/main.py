@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from app.config import settings
 from app.handlers.error_handlers import register_exception_handlers
-from app.routers import category_router, public_router, test_router
+from app.routers import category_router, label_router, public_router, test_router
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -57,6 +57,7 @@ app.include_router(public_router.router, dependencies=[])
 app.include_router(test_router.router, prefix="/api/v1/test", tags=["test"])
 
 app.include_router(category_router.router, prefix="/api/v1/categories", tags=["categories"])
+app.include_router(label_router.router, prefix="/api/v1/labels", tags=["labels"])
 
 
 if __name__ == "__main__":
