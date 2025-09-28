@@ -1,8 +1,9 @@
-from fastapi import Depends
+from typing import cast
 
-from app.models.category import Category
+from fastapi import Depends, HTTPException
+
 from app.repositories.category_repository import CategoryRepository
-from app.schemas.category import CategoryCreate, CategoryUpdate
+from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
 
 
 class CategoryService:
@@ -10,29 +11,36 @@ class CategoryService:
         """Service is constructed with a CategoryRepository instance.
 
         Contract:
-        - inputs: CategoryRepository
+        - inputs: CategoryRepositoryS
         - outputs: domain models (Category) or primitives
         - error modes: passes through repository exceptions as appropriate
         """
+
         self.category_repo = category_repo
 
-    async def create_category(self, category_data: CategoryCreate, user_id: int | None = None) -> Category:
-        category = Category(**category_data.model_dump())
-        return await self.category_repo.create(category, user_id)
+    async def create_category(self, category_create: CategoryCreate, user_id: int | None = None) -> CategoryRead:
+        exists = await self.category_repo.get_by_name(category_create.name)
+        if exists:
+            raise HTTPException(status_code=409, detail="Category with this name already exists.")
+        return await self.category_repo.create(category_create, user_id)
 
-    async def get_category(self, category_id: int) -> Category | None:
+    async def get_category(self, category_id: int) -> CategoryRead | None:
         return await self.category_repo.get_by_id(category_id)
 
-    async def get_all_categories(self) -> list[Category]:
-        return await self.category_repo.get_all()
+    async def get_categories(self) -> list[CategoryRead]:
+        return cast(list[CategoryRead], await self.category_repo.get_all())
 
     async def update_category(
-        self, category_id: int, category_data: CategoryUpdate, user_id: int | None = None
-    ) -> Category | None:
-        return await self.category_repo.update(category_id, user_id=user_id, **category_data.model_dump(exclude_unset=True))
+        self, category_id: int, category_update: CategoryUpdate, user_id: int | None = None
+    ) -> CategoryRead | None:
+        return cast(
+            CategoryRead | None,
+            await self.category_repo.update(
+                category_id,
+                category_update,
+                user_id=user_id,
+            ),
+        )
 
     async def soft_delete_category(self, category_id: int, user_id: int | None = None) -> bool:
-        return await self.category_repo.soft_delete(category_id, user_id)
-
-    async def hard_delete_category(self, category_id: int) -> bool:
-        return await self.category_repo.hard_delete(category_id)
+        return await self.category_repo.soft_delete(category_id, user_id) is not None

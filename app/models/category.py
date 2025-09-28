@@ -18,7 +18,7 @@ class Category(Base):
     __table_args__ = {"schema": "ticket"}
 
     id = Column(BigInteger, primary_key=True)
-    name = Column(String(100), nullable=False, unique=True)
+    name = Column(String(100), nullable=False)
     description = Column(Text)
     created_by = Column(BigInteger)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
