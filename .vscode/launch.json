@@ -19,7 +19,7 @@
                 "PYTHONPATH": "${workspaceFolder}"
             },
             "console": "integratedTerminal",
-            "justMyCode": false,
+            "justMyCode": true,
             "python": "${workspaceFolder}/.venv/Scripts/python.exe",
             "serverReadyAction": {
                 "pattern": "Uvicorn running on http://127.0.0.1:8000",
@@ -48,7 +48,7 @@
                 "DEBUG": "true"
             },
             "console": "integratedTerminal",
-            "justMyCode": false,
+            "justMyCode": true,
             "python": "${workspaceFolder}/.venv/Scripts/python.exe",
             "serverReadyAction": {
                 "pattern": "Uvicorn running on http://127.0.0.1:8000",
