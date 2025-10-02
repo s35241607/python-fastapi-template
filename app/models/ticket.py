@@ -33,6 +33,8 @@ ticket_labels = Table(
 )
 
 
+
+
 class Ticket(Base):
     __tablename__ = "tickets"
     __table_args__ = {"schema": settings.db_schema}
@@ -68,5 +70,5 @@ class Ticket(Base):
     approval_template = relationship("ApprovalTemplate")
     attachments = relationship("TicketAttachment", back_populates="ticket")
     view_permissions = relationship("TicketViewPermission", back_populates="ticket")
-    notes = relationship("TicketNote", back_populates="ticket")
-    approval_process = relationship("ApprovalProcess", uselist=False, back_populates="ticket")
+    notes = relationship("TicketNote", back_populates="ticket", cascade="all, delete-orphan")
+    approval_process = relationship("ApprovalProcess", uselist=False, back_populates="ticket", cascade="all, delete-orphan")

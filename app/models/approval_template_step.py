@@ -9,15 +9,18 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
+from app.config import settings
 from app.models.base import Base
 
 
 class ApprovalTemplateStep(Base):
     __tablename__ = "approval_template_steps"
-    __table_args__ = {"schema": "ticket"}
+    __table_args__ = {"schema": settings.db_schema, "extend_existing": True}
 
     id = Column(BigInteger, primary_key=True)
-    approval_template_id = Column(BigInteger, ForeignKey("ticket.approval_templates.id", ondelete="CASCADE"))
+    approval_template_id = Column(
+        BigInteger, ForeignKey(f"{settings.db_schema}.approval_templates.id", ondelete="CASCADE")
+    )
     step_order = Column(Integer, nullable=False)
     role_id = Column(BigInteger)
     user_id = Column(BigInteger)

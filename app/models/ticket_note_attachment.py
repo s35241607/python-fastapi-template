@@ -14,10 +14,10 @@ from app.models.base import Base
 
 class TicketNoteAttachment(Base):
     __tablename__ = "ticket_note_attachments"
-    __table_args__ = {"schema": settings.db_schema}
+    __table_args__ = {"schema": settings.db_schema, "extend_existing": True}
 
     id = Column(BigInteger, primary_key=True)
-    note_id = Column(BigInteger, ForeignKey("ticket.ticket_notes.id", ondelete="CASCADE"), nullable=False)
+    note_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.ticket_notes.id", ondelete="CASCADE"), nullable=False)
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)
     file_size = Column(BigInteger, nullable=False)

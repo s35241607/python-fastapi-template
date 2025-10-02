@@ -13,7 +13,7 @@ from app.models.base import Base
 
 class ApprovalTemplate(Base):
     __tablename__ = "approval_templates"
-    __table_args__ = {"schema": settings.db_schema}
+    __table_args__ = {"schema": settings.db_schema, "extend_existing": True}
 
     id = Column(BigInteger, primary_key=True)
     name = Column(String(200), nullable=False)
@@ -24,5 +24,5 @@ class ApprovalTemplate(Base):
     deleted_by = Column(BigInteger)
     deleted_at = Column(DateTime(timezone=True))
 
-    steps = relationship("ApprovalTemplateStep", back_populates="approval_template")
+    steps = relationship("ApprovalTemplateStep", back_populates="approval_template", cascade="all, delete-orphan")
     ticket_templates = relationship("TicketTemplate", back_populates="approval_template")

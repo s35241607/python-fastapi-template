@@ -1,9 +1,4 @@
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    ForeignKey,
-    UniqueConstraint,
-)
+from sqlalchemy import BigInteger, Column, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.config import settings
@@ -12,11 +7,10 @@ from app.models.base import Base
 
 class TicketViewPermission(Base):
     __tablename__ = "ticket_view_permissions"
-    __table_args__ = (UniqueConstraint("ticket_id", "user_id", "role_id"), {"schema": settings.db_schema})
+    __table_args__ = {"schema": settings.db_schema, "extend_existing": True}
 
-    id = Column(BigInteger, primary_key=True)
-    ticket_id = Column(BigInteger, ForeignKey("ticket.tickets.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(BigInteger)
-    role_id = Column(BigInteger)
+    ticket_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.tickets.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(BigInteger, primary_key=True)
+    role_id = Column(BigInteger, primary_key=True)
 
     ticket = relationship("Ticket", back_populates="view_permissions")

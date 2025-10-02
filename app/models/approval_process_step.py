@@ -17,10 +17,12 @@ from app.models.enums import ApprovalProcessStepStatus
 
 class ApprovalProcessStep(Base):
     __tablename__ = "approval_process_steps"
-    __table_args__ = {"schema": settings.db_schema}
+    __table_args__ = {"schema": settings.db_schema, "extend_existing": True}
 
     id = Column(BigInteger, primary_key=True)
-    approval_process_id = Column(BigInteger, ForeignKey("ticket.approval_processes.id", ondelete="CASCADE"))
+    approval_process_id = Column(
+        BigInteger, ForeignKey(f"{settings.db_schema}.approval_processes.id", ondelete="CASCADE")
+    )
     step_order = Column(Integer, nullable=False)
     approver_id = Column(BigInteger)
     proxy_id = Column(BigInteger)

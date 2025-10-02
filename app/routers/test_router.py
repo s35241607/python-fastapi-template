@@ -1,3 +1,4 @@
+import pytest
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,6 +11,7 @@ router = APIRouter()
 
 
 @router.get("/jwt", summary="Return JWT payload from bearer token", tags=["test"])
+@pytest.mark.asyncio
 async def read_jwt_payload(token: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict[str, Any]:
     """Read JWT payload from the provided Bearer token. This endpoint follows the project's dev
     behavior and does not verify the signature; it simply decodes and returns the payload.
@@ -26,6 +28,7 @@ async def read_jwt_payload(token: HTTPAuthorizationCredentials = Depends(bearer_
 
 
 @router.get("/error/500", summary="Test 500 error handling", tags=["test"])
+@pytest.mark.asyncio
 async def test_500_error():
     """Test endpoint to trigger a 500 internal server error for testing error handlers."""
     # This will trigger an unhandled exception
@@ -33,12 +36,14 @@ async def test_500_error():
 
 
 @router.get("/error/http", summary="Test HTTPException handling", tags=["test"])
+@pytest.mark.asyncio
 async def test_http_error():
     """Test endpoint to trigger an HTTPException."""
     raise HTTPException(status_code=400, detail="This is a test HTTP error")
 
 
 @router.get("/error/zero-division", summary="Test zero division error", tags=["test"])
+@pytest.mark.asyncio
 async def test_zero_division_error():
     """Test endpoint to trigger a zero division error."""
     # This will trigger a ZeroDivisionError

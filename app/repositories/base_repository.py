@@ -152,7 +152,7 @@ class BaseRepository[
         obj_in: CreateSchemaType | ModelType | dict[str, Any],
         user_id: int | None = None,
         preload: list[InstrumentedAttribute[Any]] | None = None,
-    ) -> ModelType:
+    ) -> ModelType | ReadSchemaType:
         if isinstance(obj_in, self.model):
             db_obj: ModelType = obj_in
         else:
@@ -166,11 +166,11 @@ class BaseRepository[
         await self.db.flush()
 
         if preload:
-            attribute_names: list[str] = [attr.key for attr in preload]  # 型別安全轉成字串
+            attribute_names: list[str] = [attr.key for attr in preload]
             await self.db.refresh(db_obj, attribute_names=attribute_names)
         else:
             await self.db.refresh(db_obj)
-        return db_obj
+        return self._convert_one(db_obj)
 
     async def update(
         self,

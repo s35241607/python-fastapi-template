@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.models.enums import TicketPriority, TicketStatus, TicketVisibility
 from app.schemas.category import CategoryRead
 from app.schemas.label import LabelRead
+from app.schemas.note import TicketNoteRead
 
 
 class TicketBase(BaseModel):
@@ -57,8 +58,9 @@ class TicketRead(TicketBase):
     updated_at: datetime | None = None
 
     # 關聯資料 (如果需要，可以包含完整的 category 和 label 物件)
-    categories: list[CategoryRead] | None = None  # CategoryRead 的資料
-    labels: list[LabelRead] | None = None  # LabelRead 的資料
+    categories: list[CategoryRead] | None = None
+    labels: list[LabelRead] | None = None
+    notes: list[TicketNoteRead] | None = None
 
     class Config:
         from_attributes = True

@@ -29,6 +29,9 @@ dev = [
   "pre-commit>=3.5.0",
 ]
 
+[tool.setuptools]
+packages = ["app"]
+
 
 [tool.ruff]
 # 設定每行程式碼的最大長度。
@@ -94,3 +97,6 @@ disallow_untyped_defs = false
 [[tool.mypy.overrides]]
 module = ["passlib.*", "jose.*"]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
