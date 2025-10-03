@@ -1,19 +1,18 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
 
-client = TestClient(app)
-
-
-def test_read_main():
+def test_read_main(client: TestClient):
+    """Test the root endpoint."""
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Welcome to FastAPI Ticket System"}
 
 
-def test_read_tickets():
-    # 注意：這個測試需要資料庫連線，實際使用時需要 mock 或測試資料庫
+def test_read_tickets(client: TestClient):
+    """Test the endpoint for reading tickets."""
+    # The client fixture now handles authentication mocking.
     response = client.get("/api/v1/tickets/")
-    # 預期會因為資料庫連線問題而失敗，但結構正確
-    # assert response.status_code == 200
-    pass
+
+    # Assert
+    assert response.status_code == 200, response.text
+    assert isinstance(response.json(), list)

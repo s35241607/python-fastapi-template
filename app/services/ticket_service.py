@@ -66,16 +66,36 @@ class TicketService:
         categorys: list[Category] = await self.category_repo.get_by_ids(ticket_data.category_ids)
         labels: list[Label] = await self.label_repo.get_by_ids(ticket_data.label_ids)
 
-        ticket = Ticket(
+        # Manually construct the Ticket object to ensure full control
+        db_obj = Ticket(
             **ticket_data.model_dump(exclude={"category_ids", "label_ids"}),
             ticket_no=new_ticket_no,
             status=TicketStatus.DRAFT,
-            categories=categorys,
-            labels=labels,
+            created_by=created_by,
         )
+        db_obj.categories = categorys
+        db_obj.labels = labels
 
-        created_ticket = await self.ticket_repo.create(ticket, created_by, preload=[Ticket.categories, Ticket.labels])
-        return TicketRead.model_validate(created_ticket, from_attributes=True)
+        # Add to session and commit to get the new ticket's ID
+        self.ticket_repo.db.add(db_obj)
+        await self.ticket_repo.db.commit()
+        await self.ticket_repo.db.refresh(db_obj, attribute_names=["id"])
+
+        # Re-fetch the ticket with all necessary relationships eagerly loaded
+        # to prevent MissingGreenlet error during Pydantic validation.
+        loaded_ticket = await self.ticket_repo.get_by_id(
+            db_obj.id,
+            options=[
+                selectinload(Ticket.categories),
+                selectinload(Ticket.labels),
+                selectinload(Ticket.notes),
+            ],
+        )
+        if not loaded_ticket:
+            # This should not happen in a normal flow
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create ticket.")
+
+        return TicketRead.model_validate(loaded_ticket, from_attributes=True)
 
     async def get_tickets(self, current_user_id: int) -> list[TicketRead]:
         """取得使用者可見的工單列表"""
@@ -90,6 +110,7 @@ class TicketService:
             selectinload(Ticket.approval_process).selectinload(ApprovalProcess.steps),
             selectinload(Ticket.categories),
             selectinload(Ticket.labels),
+            selectinload(Ticket.notes),
         ]
         ticket = await self.ticket_repo.get_by_id(ticket_id, options=options)
         if not ticket:

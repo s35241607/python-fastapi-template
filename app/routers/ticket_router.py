@@ -10,7 +10,7 @@ from app.schemas.ticket import (
 )
 from app.services.ticket_service import TicketService
 
-router = APIRouter(prefix="/tickets", tags=["tickets"])
+router = APIRouter()
 
 
 def get_ticket_service(ticket_service: TicketService = Depends(TicketService)) -> TicketService:
