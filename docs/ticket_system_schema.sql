@@ -46,6 +46,7 @@ CREATE TYPE ticket_visibility AS ENUM (
     'restricted'  -- 限制訪問 (僅特定人員/角色可見)
 );
 
+CREATE TYPE attachment_usage_type AS ENUM ('inline', 'general');
 
 -- =========================================
 -- Categories & Labels (通用分類與標籤)
@@ -154,19 +155,39 @@ CREATE TABLE ticket_labels (
     PRIMARY KEY (ticket_id, label_id)
 );
 
-CREATE TABLE ticket_attachments (
-    id               BIGSERIAL PRIMARY KEY,
-    ticket_id        BIGINT REFERENCES tickets(id) ON DELETE CASCADE,
-    file_name        VARCHAR(255),
-    file_path        VARCHAR(500),
-    file_size        BIGINT,
-    mime_type        VARCHAR(100),
-    created_by       BIGINT,
-    created_at       TIMESTAMPTZ DEFAULT now(),
-    updated_by       BIGINT,
-    updated_at       TIMESTAMPTZ DEFAULT now(),
-    is_deleted       BOOLEAN NOT NULL DEFAULT false,
+-- =========================================
+-- 統一附件表 (Attachments)
+-- =========================================
+CREATE TABLE attachments (
+    id BIGSERIAL PRIMARY KEY,
+
+    related_type VARCHAR(50) NOT NULL,   -- 'ticket', 'note', 'template', ...
+    related_id BIGINT NOT NULL,          -- 指向不同資源
+    ticket_id BIGINT,                    -- 快速查詢
+
+    usage_type attachment_usage_type NOT NULL DEFAULT 'general',
+
+    file_name VARCHAR(255) NOT NULL,
+    storage_path VARCHAR(500) NOT NULL,
+    file_size BIGINT NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    storage_provider VARCHAR(50) DEFAULT 'local',
+    description TEXT,
+
+    created_by BIGINT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_by BIGINT,
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    is_deleted BOOLEAN NOT NULL DEFAULT false
 );
+
+CREATE INDEX idx_attachments_related_not_deleted
+ON attachments (related_type, related_id)
+WHERE is_deleted = false;
+
+CREATE INDEX idx_attachments_ticket_id
+ON attachments (ticket_id)
+WHERE is_deleted = false;
 
 -- =========================================
 -- 權限設定
@@ -184,7 +205,7 @@ CREATE TABLE ticket_view_permissions (
 );
 
 -- =========================================
--- 統一事件流
+-- 統一事件流 (Notes)
 -- =========================================
 CREATE TABLE ticket_notes (
     id            BIGSERIAL PRIMARY KEY,
@@ -201,20 +222,6 @@ CREATE TABLE ticket_notes (
         (system IS TRUE AND event_type IS NOT NULL AND note IS NULL) OR
         (system IS FALSE AND event_type IS NULL AND note IS NOT NULL)
     )
-);
-
-CREATE TABLE ticket_note_attachments (
-    id               BIGSERIAL PRIMARY KEY,
-    note_id          BIGINT NOT NULL REFERENCES ticket_notes(id) ON DELETE CASCADE,
-    file_name        VARCHAR(255) NOT NULL,
-    file_path        VARCHAR(500) NOT NULL,
-    file_size        BIGINT NOT NULL,
-    mime_type        VARCHAR(100) NOT NULL,
-    created_by       BIGINT,
-    created_at       TIMESTAMPTZ DEFAULT now(),
-    updated_by       BIGINT,
-    updated_at       TIMESTAMPTZ DEFAULT now(),
-    is_deleted       BOOLEAN NOT NULL DEFAULT false
 );
 
 -- =========================================
