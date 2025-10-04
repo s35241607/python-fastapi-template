@@ -11,4 +11,6 @@ class TicketNoteRepository(BaseRepository[TicketNote, TicketNote, TicketNote, Ti
     model = TicketNote
 
     def __init__(self, session: AsyncSession = Depends(get_db)):
-        super().__init__(session, schema=TicketNoteRead)
+        # Disable auto-conversion to handle it manually in the service layer,
+        # allowing for eager loading of relationships before Pydantic validation.
+        super().__init__(session, schema=TicketNoteRead, auto_convert=False)

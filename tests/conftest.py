@@ -83,3 +83,48 @@ def client() -> Generator[TestClient, None, None]:
 
     # Clean up overrides after the test
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+def get_client_for_user() -> Generator[callable, None, None]:
+    """
+    Provides a factory function to create a TestClient for a specific user.
+
+    IMPORTANT: This factory modifies the global app dependency overrides.
+    When switching between clients for different users, you must re-acquire
+    the client from the factory to ensure the correct user ID is used for requests.
+    """
+    from app.main import app
+    from app.database import get_db, engine
+    from app.auth.dependencies import get_user_id_from_jwt
+
+    TestSessionLocal = async_sessionmaker(
+        bind=engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+        async with TestSessionLocal() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    def _factory(user_id: int) -> TestClient:
+        def override_get_user_id():
+            return user_id
+
+        # Apply overrides for the duration of the test
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_user_id_from_jwt] = override_get_user_id
+
+        # Create a new client each time to avoid state issues (e.g., cookies)
+        client = TestClient(app)
+        return client
+
+    yield _factory
+
+    # Clean up overrides after the test
+    from app.main import app
+    app.dependency_overrides.clear()

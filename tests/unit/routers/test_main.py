@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -8,7 +9,8 @@ def test_read_main(client: TestClient):
     assert response.json() == {"message": "Welcome to FastAPI Ticket System"}
 
 
-def test_read_tickets(client: TestClient):
+@pytest.mark.asyncio
+async def test_read_tickets(client: TestClient):
     """Test the endpoint for reading tickets."""
     # The client fixture now handles authentication mocking.
     response = client.get("/api/v1/tickets/")

@@ -58,19 +58,6 @@ class BaseRepository[
             raise RuntimeError("Schema class must be provided for conversion.")
         return [self.schema.model_validate(item, from_attributes=True) for item in objs]
 
-    def _extract_data_from_input(
-        self,
-        obj_in: CreateSchemaType | UpdateSchemaType | ModelType | dict[str, Any],
-    ) -> dict[str, Any]:
-        if isinstance(obj_in, dict):
-            return {str(k): v for k, v in obj_in.items()}
-        elif hasattr(obj_in, "model_dump") and callable(getattr(obj_in, "model_dump", None)):
-            return obj_in.model_dump()  # type: ignore[no-any-return]
-        elif hasattr(obj_in, "__dict__"):
-            return {k: v for k, v in obj_in.__dict__.items() if not k.startswith("_") and k != "registry"}
-        else:
-            raise TypeError(f"Unsupported input type: {type(obj_in)}")
-
     # -------------------------
     # CRUD methods
     # -------------------------
@@ -152,11 +139,11 @@ class BaseRepository[
         obj_in: CreateSchemaType | ModelType | dict[str, Any],
         user_id: int | None = None,
         preload: list[InstrumentedAttribute[Any]] | None = None,
-    ) -> ModelType | ReadSchemaType:
+    ) -> ModelType:
         if isinstance(obj_in, self.model):
             db_obj: ModelType = obj_in
         else:
-            data = self._extract_data_from_input(obj_in)
+            data = obj_in if isinstance(obj_in, dict) else obj_in.model_dump()
             db_obj = self.model(**data)  # type: ignore[call-arg]
 
         if hasattr(db_obj, "created_by") and user_id:
@@ -170,33 +157,36 @@ class BaseRepository[
             await self.db.refresh(db_obj, attribute_names=attribute_names)
         else:
             await self.db.refresh(db_obj)
-        return self._convert_one(db_obj)
+        return db_obj
 
     async def update(
         self,
         obj_id: Any,
-        obj_in: UpdateSchemaType | ModelType | dict[str, Any],
+        obj_in: UpdateSchemaType | dict[str, Any],
         user_id: int | None = None,
-    ) -> ModelType | ReadSchemaType | None:
+    ) -> ModelType | None:
+        """
+        Updates an object in the database from a Pydantic model or dict.
+        Returns the updated raw SQLAlchemy model instance.
+        """
         db_obj = await self._get_model_by_id(obj_id, include_deleted=True)
         if not db_obj:
             return None
 
-        data = (
-            obj_in.model_dump(exclude_unset=True)  # type: ignore[union-attr]
-            if isinstance(obj_in, BaseModel)
-            else self._extract_data_from_input(obj_in)
-        )
-        for field, value in data.items():
+        update_data = obj_in if isinstance(obj_in, dict) else obj_in.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
             if hasattr(db_obj, field):
                 setattr(db_obj, field, value)
+
         if hasattr(db_obj, "updated_by") and user_id:
-            db_obj.updated_by = user_id  # type: ignore
+            setattr(db_obj, "updated_by", user_id)
+            setattr(db_obj, "updated_at", datetime.now(UTC))
 
         self.db.add(db_obj)
         await self.db.flush()
         await self.db.refresh(db_obj)
-        return self._convert_one(db_obj)
+        return db_obj
 
     async def delete(self, obj_id: Any) -> ModelType | ReadSchemaType | None:
         """

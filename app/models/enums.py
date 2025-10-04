@@ -37,7 +37,7 @@ class TicketEventType(str, enum.Enum):
     DESCRIPTION_CHANGE = "description_change"
     STATUS_CHANGE = "status_change"
     PRIORITY_CHANGE = "priority_change"
-    ASSIGNEE_CHANGE = "assignee_change"
+    ASSIGNED_TO_CHANGE = "assigned_to_change"
     DUE_DATE_CHANGE = "due_date_change"
     ATTACHMENT_ADD = "attachment_add"
     ATTACHMENT_REMOVE = "attachment_remove"
