@@ -56,6 +56,29 @@ class TicketService:
             selectinload(Ticket.view_permissions),
         ]
 
+    async def _log_ticket_updates(self, ticket_id: int, user_id: int, original_ticket: Ticket, update_data: dict[str, Any]):
+        """Helper function to log changes to a ticket as system notes."""
+        field_to_event_map = {
+            "title": TicketEventType.TITLE_CHANGE,
+            "description": TicketEventType.DESCRIPTION_CHANGE,
+            "status": TicketEventType.STATUS_CHANGE,
+            "priority": TicketEventType.PRIORITY_CHANGE,
+            "assigned_to": TicketEventType.ASSIGNED_TO_CHANGE,
+            "due_date": TicketEventType.DUE_DATE_CHANGE,
+        }
+
+        for field, value in update_data.items():
+            original_value = getattr(original_ticket, field)
+            if original_value != value:
+                event_type = field_to_event_map.get(field)
+                if event_type:
+                    await self.note_service.create_system_event(
+                        ticket_id=ticket_id,
+                        author_id=user_id,
+                        event_type=event_type,
+                        event_details={"from": str(original_value), "to": str(value)},
+                    )
+
     async def create_ticket(self, ticket_data: TicketCreate, created_by: int) -> TicketRead:
         """建立新工單，包含分類和標籤關聯"""
         # 1. 取得 ticket no
@@ -85,7 +108,7 @@ class TicketService:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create ticket.")
 
         # Trigger notification
-        await self.notification_service.trigger_event(NotificationEvent.TICKET_CREATED, loaded_ticket)
+        await self.notification_service.trigger_event(NotificationEvent.ON_CREATE, loaded_ticket)
 
         return cast(TicketRead, loaded_ticket)
 
@@ -137,15 +160,8 @@ class TicketService:
 
         update_data = ticket_update.model_dump(exclude_unset=True, exclude={"category_ids", "label_ids"})
 
-        for field, value in update_data.items():
-            original_value = getattr(original_ticket, field)
-            if original_value != value:
-                await self.note_service.create_system_event(
-                    ticket_id=ticket_id,
-                    author_id=current_user_id,
-                    event_type=TicketEventType[f"{field.upper()}_CHANGE"],
-                    event_details={"from": str(original_value), "to": str(value)},
-                )
+        # Create system events for changes
+        self._log_ticket_updates(ticket_id, current_user_id, original_ticket, update_data)
 
         # Pass a clean dict to the repository to avoid session conflicts
         updated_ticket_model = await self.ticket_repo.update(ticket_id, update_data, user_id=current_user_id)
@@ -164,7 +180,7 @@ class TicketService:
         # Trigger notifications for changes that occurred.
         update_fields = ticket_update.model_dump(exclude_unset=True)
         if "assigned_to" in update_fields and original_ticket.assigned_to != update_fields["assigned_to"]:
-            await self.notification_service.trigger_event(NotificationEvent.ASSIGNEE_CHANGED, reloaded_ticket)
+            await self.notification_service.trigger_event(NotificationEvent.ON_STATUS_CHANGE, reloaded_ticket)
 
         return cast(TicketRead, reloaded_ticket)
 
@@ -240,13 +256,10 @@ class TicketService:
              raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to reload ticket after status update.")
 
         # Trigger notification for status change
-        try:
-            event_name = f"status_changed_to_{new_status.value.lower()}"
-            event_to_trigger = NotificationEvent(event_name)
-            await self.notification_service.trigger_event(event_to_trigger, reloaded_ticket)
-        except ValueError:
-            # This status change does not have a corresponding notification event, which is fine.
-            pass
+        if new_status in [TicketStatus.CLOSED, TicketStatus.CANCELLED]:
+            await self.notification_service.trigger_event(NotificationEvent.ON_CLOSE, reloaded_ticket)
+        else:
+            await self.notification_service.trigger_event(NotificationEvent.ON_STATUS_CHANGE, reloaded_ticket)
 
         return cast(TicketRead, reloaded_ticket)
 
@@ -272,6 +285,6 @@ class TicketService:
         )
 
         # Trigger notification using the already-fetched ticket data
-        await self.notification_service.trigger_event(NotificationEvent.COMMENT_ADDED, ticket_read)
+        await self.notification_service.trigger_event(NotificationEvent.ON_NEW_COMMENT, ticket_read)
 
         return created_note

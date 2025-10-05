@@ -5,36 +5,39 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
-    Integer,
+    BigInteger,
     Text,
-    func,
+    and_,
 )
 from sqlalchemy.orm import relationship
 
 from app.config import settings
-from app.models.base import Base
+from app.models.base import Base, Auditable
 from app.models.enums import TicketEventType
 
 
-class TicketNote(Base):
+class TicketNote(Base, Auditable):
     __tablename__ = "ticket_notes"
     __table_args__ = {"schema": settings.db_schema, "extend_existing": True}
 
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     ticket_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey(f"{settings.db_schema}.tickets.id" if settings.db_schema else "tickets.id", ondelete="CASCADE"),
         nullable=False,
     )
-    author_id = Column(Integer, nullable=False)
+    author_id = Column(BigInteger, nullable=False)
     note = Column(Text)
     system = Column(Boolean, nullable=False)
     event_type = Column(Enum(TicketEventType, name="ticket_event_type", schema=settings.db_schema))
     event_details = Column(JSON)
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
-    deleted_by = Column(Integer)
-    deleted_at = Column(DateTime(timezone=True))
+    is_deleted = Column(Boolean, nullable=False, default=False)
 
     ticket = relationship("Ticket", back_populates="notes")
-    attachments = relationship("TicketNoteAttachment", back_populates="note", cascade="all, delete-orphan")
+
+    attachments = relationship(
+        "Attachment",
+        primaryjoin="and_(TicketNote.id == Attachment.related_id, Attachment.related_type == 'note')",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )

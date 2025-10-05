@@ -4,6 +4,9 @@ from fastapi.security import OAuth2PasswordBearer
 
 from app.config import settings
 from app.handlers.error_handlers import register_exception_handlers
+from contextlib import asynccontextmanager
+
+from app.database import Base, engine
 from app.routers import (
     approval_router,
     category_router,
@@ -12,21 +15,26 @@ from app.routers import (
     test_router,
     ticket_router,
 )
+from app.utils.kafka_producer import kafka_producer_client
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # Startup
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all)
-#     yield
-#     # Shutdown
-#     await engine.dispose()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: The database tables are created by Alembic, so we don't need to create them here.
+    # We could add other startup logic here if needed.
+    print("Application startup...")
+    yield
+    # Shutdown
+    print("Application shutdown...")
+    kafka_producer_client.close()
+    await engine.dispose()
 
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
+    lifespan=lifespan,
     security=[{"BearerAuth": []}],  # Add global security for Swagger UI
     openapi_extra={
         "components": {

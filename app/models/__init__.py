@@ -1,36 +1,36 @@
 # Import all models to ensure they are registered with SQLAlchemy
-from app.models.approval_process import ApprovalProcess
-from app.models.approval_process_step import ApprovalProcessStep
-from app.models.approval_template import ApprovalTemplate
-from app.models.approval_template_step import ApprovalTemplateStep
-from app.models.base import Base
-from app.models.category import Category
-from app.models.enums import (
+from .approval_process import ApprovalProcess
+from .approval_process_step import ApprovalProcessStep
+from .approval_template import ApprovalTemplate
+from .approval_template_step import ApprovalTemplateStep
+from .attachment import Attachment
+from .base import Base, Auditable
+from .category import Category
+from .enums import (
     ApprovalProcessStatus,
     ApprovalProcessStepStatus,
+    AttachmentUsageType,
     NotificationEvent,
     TicketEventType,
     TicketPriority,
     TicketStatus,
     TicketVisibility,
 )
-from app.models.label import Label
-from app.models.notification_rule import NotificationRule
-from app.models.ticket import Ticket
-from app.models.ticket_attachment import TicketAttachment
-from app.models.ticket_note import TicketNote
-from app.models.ticket_note_attachment import TicketNoteAttachment
-from app.models.ticket_template import TicketTemplate
-from app.models.ticket_view_permission import TicketViewPermission
+from .label import Label
+from .notification_rule import NotificationRule, NotificationRuleRole, NotificationRuleUser
+from .ticket import Ticket
+from .ticket_note import TicketNote
+from .ticket_template import TicketTemplate
+from .ticket_view_permission import TicketViewPermission
 
 __all__ = [
     "Base",
+    "Auditable",
     "Ticket",
     "Category",
     "Label",
-    "TicketAttachment",
+    "Attachment",
     "TicketNote",
-    "TicketNoteAttachment",
     "TicketTemplate",
     "TicketViewPermission",
     "ApprovalProcess",
@@ -38,6 +38,9 @@ __all__ = [
     "ApprovalTemplate",
     "ApprovalTemplateStep",
     "NotificationRule",
+    "NotificationRuleUser",
+    "NotificationRuleRole",
+    # Enums
     "TicketStatus",
     "TicketPriority",
     "ApprovalProcessStatus",
@@ -45,4 +48,5 @@ __all__ = [
     "TicketEventType",
     "NotificationEvent",
     "TicketVisibility",
+    "AttachmentUsageType",
 ]

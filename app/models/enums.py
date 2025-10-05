@@ -58,3 +58,8 @@ class NotificationEvent(str, enum.Enum):
 class TicketVisibility(str, enum.Enum):
     INTERNAL = "internal"
     RESTRICTED = "restricted"
+
+
+class AttachmentUsageType(str, enum.Enum):
+    GENERAL = "general"
+    INLINE = "inline"

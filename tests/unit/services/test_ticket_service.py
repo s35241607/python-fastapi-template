@@ -7,7 +7,8 @@ from fastapi import HTTPException
 from app.models import Ticket, TicketNote
 from app.models.enums import TicketPriority, TicketStatus, TicketVisibility
 from app.schemas.note import TicketNoteCreate
-from app.schemas.ticket import TicketStatusUpdate, TicketUpdate
+from app.schemas.ticket import TicketCreate, TicketStatusUpdate, TicketUpdate
+from app.services.notification_service import NotificationEvent
 from app.services.ticket_service import TicketService
 
 
@@ -38,7 +39,9 @@ class TestTicketService:
 
     @pytest.fixture
     def mock_notification_service(self):
-        return AsyncMock()
+        mock = AsyncMock()
+        mock.trigger_event = AsyncMock()
+        return mock
 
     @pytest.fixture
     def service(
@@ -145,7 +148,31 @@ class TestTicketService:
         assert exc_info.value.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_update_ticket_status_valid_transition(self, service: TicketService, mock_ticket_repo, mock_approval_service):
+    async def test_create_ticket(
+        self, service: TicketService, mock_ticket_repo, mock_category_repo, mock_label_repo, mock_notification_service
+    ):
+        # Arrange
+        user_id = 123
+        ticket_data = TicketCreate(title="New Ticket", description="Desc", category_ids=[1], label_ids=[1])
+        mock_ticket = self._get_mock_ticket(1, user_id, TicketVisibility.INTERNAL, TicketStatus.DRAFT)
+
+        mock_ticket_repo.generate_ticket_no.return_value = "TIC-2024-001"
+        mock_category_repo.get_by_ids.return_value = [MagicMock()]
+        mock_label_repo.get_by_ids.return_value = [MagicMock()]
+        mock_ticket_repo.create.return_value = mock_ticket
+        mock_ticket_repo.get_by_id.return_value = mock_ticket  # For the re-fetch
+
+        # Act
+        await service.create_ticket(ticket_data, user_id)
+
+        # Assert
+        mock_ticket_repo.create.assert_called_once()
+        mock_notification_service.trigger_event.assert_awaited_once_with(NotificationEvent.ON_CREATE, mock_ticket)
+
+    @pytest.mark.asyncio
+    async def test_update_ticket_status_valid_transition(
+        self, service: TicketService, mock_ticket_repo, mock_approval_service, mock_notification_service
+    ):
         # Arrange
         ticket_id = 1
         user_id = 123
@@ -163,6 +190,27 @@ class TestTicketService:
         assert mock_ticket_repo.get_by_id.call_count == 2
         mock_approval_service.start_approval_process.assert_called_once_with(mock_ticket, user_id)
         mock_ticket_repo.update.assert_called_once()
+        mock_notification_service.trigger_event.assert_awaited_once_with(NotificationEvent.ON_STATUS_CHANGE, ANY)
+
+    @pytest.mark.asyncio
+    async def test_update_ticket_status_to_closed(self, service: TicketService, mock_ticket_repo, mock_notification_service):
+        # Arrange
+        ticket_id = 1
+        user_id = 123  # creator
+        status_update = TicketStatusUpdate(status=TicketStatus.CLOSED, reason="Resolved")
+
+        mock_ticket = self._get_mock_ticket(ticket_id, user_id, TicketVisibility.INTERNAL, TicketStatus.RESOLVED)
+        mock_ticket.created_by = user_id  # Ensure user is creator for this transition
+        mock_ticket_repo.get_by_id.return_value = mock_ticket
+        mock_ticket_repo.update.return_value = mock_ticket
+
+        # Act
+        await service.update_ticket_status(ticket_id, status_update, user_id)
+
+        # Assert
+        assert mock_ticket_repo.get_by_id.call_count == 2
+        mock_ticket_repo.update.assert_called_once()
+        mock_notification_service.trigger_event.assert_awaited_once_with(NotificationEvent.ON_CLOSE, ANY)
 
     @pytest.mark.asyncio
     async def test_update_ticket_status_invalid_transition(self, service: TicketService, mock_ticket_repo):
@@ -183,7 +231,9 @@ class TestTicketService:
         mock_ticket_repo.update.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_update_ticket(self, service: TicketService, mock_ticket_repo, mock_note_service):
+    async def test_update_ticket_no_notification(
+        self, service: TicketService, mock_ticket_repo, mock_note_service, mock_notification_service
+    ):
         # Arrange
         ticket_id = 1
         user_id = 123
@@ -200,6 +250,31 @@ class TestTicketService:
         assert mock_ticket_repo.get_by_id.call_count == 2
         mock_note_service.create_system_event.assert_called_once()
         mock_ticket_repo.update.assert_called_once()
+        mock_notification_service.trigger_event.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_update_ticket_with_assignee_change(
+        self, service: TicketService, mock_ticket_repo, mock_note_service, mock_notification_service
+    ):
+        # Arrange
+        ticket_id = 1
+        user_id = 123
+        ticket_update = TicketUpdate(title="New Title", assigned_to=456)
+        mock_ticket = self._get_mock_ticket(ticket_id, user_id, TicketVisibility.INTERNAL, TicketStatus.DRAFT)
+        mock_ticket.assigned_to = None  # Original state
+
+        mock_ticket_repo.get_by_id.return_value = mock_ticket
+        mock_ticket_repo.update.return_value = mock_ticket
+
+        # Act
+        await service.update_ticket(ticket_id, ticket_update, user_id)
+
+        # Assert
+        assert mock_ticket_repo.get_by_id.call_count == 2
+        # one for title change, one for assignee change
+        assert mock_note_service.create_system_event.call_count == 2
+        mock_ticket_repo.update.assert_called_once()
+        mock_notification_service.trigger_event.assert_awaited_once_with(NotificationEvent.ON_STATUS_CHANGE, ANY)
 
     @pytest.mark.asyncio
     async def test_get_tickets_for_user(self, service: TicketService, mock_ticket_repo):
@@ -216,7 +291,7 @@ class TestTicketService:
         assert len(result) == 1
 
     @pytest.mark.asyncio
-    async def test_add_user_note(self, service: TicketService, mock_ticket_repo, mock_note_service):
+    async def test_add_user_note(self, service: TicketService, mock_ticket_repo, mock_note_service, mock_notification_service):
         # Arrange
         ticket_id = 1
         user_id = 123
@@ -234,6 +309,7 @@ class TestTicketService:
         mock_note_service.create_user_note.assert_called_once_with(
             ticket_id=ticket_id, note_data=note_data, author_id=user_id
         )
+        mock_notification_service.trigger_event.assert_awaited_once_with(NotificationEvent.ON_NEW_COMMENT, ANY)
 
     @pytest.mark.asyncio
     async def test_get_ticket_notes(self, service: TicketService, mock_ticket_repo, mock_note_repo):
