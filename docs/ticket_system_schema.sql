@@ -280,8 +280,15 @@ CREATE TABLE approval_process_steps (
     id                  BIGSERIAL PRIMARY KEY,
     approval_process_id BIGINT REFERENCES approval_processes(id) ON DELETE CASCADE,
     step_order          INT NOT NULL,
-    approver_id         BIGINT,
-    proxy_id            BIGINT,
+
+    -- 新增：指派給誰？從範本或規則解析而來，確保流程穩定
+    designated_user_id  BIGINT,
+    designated_role_id      BIGINT,
+
+    -- 修改：誰執行這個動作，如果是代理別人的話，要再去記錄代理哪個人
+    actioned_by_id          BIGINT,
+    delegated_for_id        BIGINT,
+
     status              approval_process_step_status NOT NULL DEFAULT 'pending',
     action_at           TIMESTAMPTZ,
     comment             TEXT,
@@ -289,9 +296,23 @@ CREATE TABLE approval_process_steps (
     created_at          TIMESTAMPTZ DEFAULT now(),
     updated_by          BIGINT,
     updated_at          TIMESTAMPTZ DEFAULT now(),
-    is_deleted          BOOLEAN NOT NULL DEFAULT false
+    is_deleted          BOOLEAN NOT NULL DEFAULT false,
+
+    -- 新增：確保每個步驟都有明確的指派對象 (用戶或角色)
+    CONSTRAINT chk_designated_approver CHECK (
+        (designated_user_id IS NOT NULL AND designated_role_id IS NULL) OR
+        (designated_user_id IS NULL AND designated_role_id IS NOT NULL)
+    ),
+    -- 新增：確保代理邏輯的完整性
+    CONSTRAINT chk_proxy_logic CHECK (
+        (delegated_for_id IS NULL) OR (actioned_by_id IS NOT NULL)
+    )
 );
 COMMENT ON TABLE approval_process_steps IS '一個具體簽核流程中的每一個步驟的狀態';
+COMMENT ON COLUMN approval_process_steps.designated_user_id IS '此步驟指派的簽核人 ID (從範本或動態規則產生)';
+COMMENT ON COLUMN approval_process_steps.designated_role_id IS '此步驟指派的簽核角色 ID (從範本或動態規則產生)';
+COMMENT ON COLUMN approval_process_steps.actioned_by_id IS '實際執行簽核動作的使用者 ID';
+COMMENT ON COLUMN approval_process_steps.delegated_for_id IS '此簽核所代理的使用者 ID (若非代理則為 NULL)';
 
 -- =========================================
 -- 通知設定
