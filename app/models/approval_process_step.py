@@ -22,7 +22,9 @@ class ApprovalProcessStep(Base):
     id = Column(BigInteger, primary_key=True)
     approval_process_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.approval_processes.id", ondelete="CASCADE"))
     step_order = Column(Integer, nullable=False)
-    approval_type = Column(Enum(ApprovalStepType, name="approval_step_type", schema=settings.db_schema), nullable=False)  # Added
+    approval_type = Column(
+        Enum(ApprovalStepType, name="approval_step_type", schema=settings.db_schema), nullable=False
+    )  # Added
 
     # This status is the aggregate status of the step, determined by the approvers' statuses and the approval_type
     status = Column(
@@ -37,7 +39,7 @@ class ApprovalProcessStep(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_by = Column(BigInteger)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    is_deleted = Column(Boolean, nullable=False, default=False) # Replaced soft delete
+    is_deleted = Column(Boolean, nullable=False, default=False)  # Replaced soft delete
 
     approval_process = relationship("ApprovalProcess", back_populates="steps")
     approvers = relationship("ApprovalProcessStepApprover", back_populates="approval_process_step")  # Added

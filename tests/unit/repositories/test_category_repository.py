@@ -34,8 +34,7 @@ class TestCategoryRepository:
             created_by=1,
             updated_at=None,
             updated_by=None,
-            deleted_at=None,
-            deleted_by=None,
+            is_deleted=False,
         )
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_category
@@ -76,8 +75,7 @@ class TestCategoryRepository:
             created_by=1,
             updated_at=None,
             updated_by=None,
-            deleted_at=None,
-            deleted_by=None,
+            is_deleted=False,
         )
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_category
@@ -103,8 +101,7 @@ class TestCategoryRepository:
                 created_by=1,
                 updated_at=None,
                 updated_by=None,
-                deleted_at=None,
-                deleted_by=None,
+                is_deleted=False,
             ),
             Category(
                 id=2,
@@ -114,8 +111,7 @@ class TestCategoryRepository:
                 created_by=1,
                 updated_at=None,
                 updated_by=None,
-                deleted_at=None,
-                deleted_by=None,
+                is_deleted=False,
             ),
         ]
         mock_result = MagicMock()
@@ -143,14 +139,13 @@ class TestCategoryRepository:
             created_by=user_id,
             updated_at=None,
             updated_by=None,
-            deleted_at=None,
-            deleted_by=None,
+            is_deleted=False,
         )
         mock_session.add.return_value = None
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
 
-        # Mock the conversion
+        # Mock the conversion to return CategoryRead
         repo._convert_one = MagicMock(
             return_value=CategoryRead(
                 id=1,
@@ -186,8 +181,7 @@ class TestCategoryRepository:
             created_by=1,
             updated_at=None,
             updated_by=None,
-            deleted_at=None,
-            deleted_by=None,
+            is_deleted=False,
         )
 
         # Mock _get_model_by_id
@@ -246,8 +240,7 @@ class TestCategoryRepository:
             created_by=1,
             updated_at=None,
             updated_by=None,
-            deleted_at=None,
-            deleted_by=None,
+            is_deleted=False,
         )
 
         repo._get_model_by_id = AsyncMock(return_value=mock_category)
@@ -262,8 +255,7 @@ class TestCategoryRepository:
 
         # Assert
         assert result is not None
-        assert mock_category.deleted_at is not None
-        assert mock_category.deleted_by == user_id
+        assert mock_category.is_deleted is True
         mock_session.add.assert_called_once()
         mock_session.flush.assert_called_once()
         mock_session.refresh.assert_called_once()

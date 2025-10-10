@@ -16,7 +16,7 @@ async def create_ticket(
     ticket: TicketCreate,
     ticket_service: TicketService = Depends(get_ticket_service),
     current_user_id: int = Depends(get_user_id_from_jwt),
-):
+) -> TicketRead:
     """建立新工單 (支援 template、categories、labels)"""
     created_ticket = await ticket_service.create_ticket(ticket, current_user_id)
     return created_ticket
@@ -26,7 +26,7 @@ async def create_ticket(
 async def get_tickets(
     ticket_service: TicketService = Depends(get_ticket_service),
     current_user_id: int = Depends(get_user_id_from_jwt),
-):
+) -> list[TicketRead]:
     """取得工單列表"""
     tickets = await ticket_service.get_tickets()
     return tickets

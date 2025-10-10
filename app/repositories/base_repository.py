@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 from pydantic import BaseModel
@@ -65,7 +64,7 @@ class BaseRepository[
         if isinstance(obj_in, dict):
             return {str(k): v for k, v in obj_in.items()}
         elif hasattr(obj_in, "model_dump") and callable(getattr(obj_in, "model_dump", None)):
-            return obj_in.model_dump()  # type: ignore[no-any-return]
+            return obj_in.model_dump()  # type: ignore[attr-defined]
         elif hasattr(obj_in, "__dict__"):
             return {k: v for k, v in obj_in.__dict__.items() if not k.startswith("_") and k != "registry"}
         else:
@@ -85,8 +84,8 @@ class BaseRepository[
         if options:
             stmt = stmt.options(*options)
 
-        if not include_deleted and hasattr(self.model, "deleted_at"):
-            stmt = stmt.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
+        if not include_deleted and hasattr(self.model, "is_deleted"):
+            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
         result = await self.db.execute(stmt)
         return self._convert_one(result.scalar_one_or_none())
 
@@ -103,8 +102,8 @@ class BaseRepository[
         if options:
             stmt = stmt.options(*options)
 
-        if not include_deleted and hasattr(self.model, "deleted_at"):
-            stmt = stmt.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
+        if not include_deleted and hasattr(self.model, "is_deleted"):
+            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -118,8 +117,8 @@ class BaseRepository[
         if options:
             stmt = stmt.options(*options)
 
-        if not include_deleted and hasattr(self.model, "deleted_at"):
-            stmt = stmt.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
+        if not include_deleted and hasattr(self.model, "is_deleted"):
+            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
         result = await self.db.execute(stmt)
         return self._convert_many(result.scalars().all())
 
@@ -136,8 +135,8 @@ class BaseRepository[
         if options:
             stmt = stmt.options(*options)
 
-        if not include_deleted and hasattr(self.model, "deleted_at"):
-            stmt = stmt.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
+        if not include_deleted and hasattr(self.model, "is_deleted"):
+            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
 
         if filters:
             for field, value in filters.items():
@@ -152,7 +151,7 @@ class BaseRepository[
         obj_in: CreateSchemaType | ModelType | dict[str, Any],
         user_id: int | None = None,
         preload: list[InstrumentedAttribute[Any]] | None = None,
-    ) -> ModelType:
+    ) -> ModelType | ReadSchemaType:
         if isinstance(obj_in, self.model):
             db_obj: ModelType = obj_in
         else:
@@ -170,7 +169,7 @@ class BaseRepository[
             await self.db.refresh(db_obj, attribute_names=attribute_names)
         else:
             await self.db.refresh(db_obj)
-        return db_obj
+        return self._convert_one(db_obj)  # type: ignore[return-value]
 
     async def update(
         self,
@@ -210,13 +209,11 @@ class BaseRepository[
 
     async def soft_delete(self, obj_id: Any, user_id: int | None = None) -> ModelType | ReadSchemaType | None:
         """
-        軟刪除，設定 deleted_at 及 deleted_by
+        軟刪除，設定 is_deleted 為 True
         """
         obj = await self._get_model_by_id(obj_id)
         if obj:
-            obj.deleted_at = datetime.now(UTC)  # type: ignore
-            if user_id:
-                obj.deleted_by = user_id  # type: ignore
+            obj.is_deleted = True  # type: ignore
             self.db.add(obj)
             await self.db.flush()
             await self.db.refresh(obj)
@@ -232,7 +229,7 @@ class BaseRepository[
         include_deleted: bool = False,
     ) -> ModelType | None:
         stmt = select(self.model).where(self.model.id == obj_id)  # type: ignore[attr-defined]
-        if not include_deleted and hasattr(self.model, "deleted_at"):
-            stmt = stmt.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
+        if not include_deleted and hasattr(self.model, "is_deleted"):
+            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()

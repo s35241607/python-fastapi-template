@@ -18,6 +18,6 @@ class CategoryRepository(BaseRepository[Category, CategoryCreate, CategoryUpdate
     async def get_by_name(self, name: str, include_deleted: bool = False) -> Category | CategoryRead | None:
         statement = select(self.model).where(self.model.name == name)
         if not include_deleted:
-            statement = statement.where(self.model.deleted_at.is_(None))
+            statement = statement.where(self.model.is_deleted == False)
         result = await self.db.execute(statement)
         return self._convert_one(result.scalar_one_or_none())

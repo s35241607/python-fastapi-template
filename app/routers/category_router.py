@@ -14,7 +14,7 @@ async def create_category(
     category_create: CategoryCreate,
     services: CategoryService = Depends(CategoryService),
     user_id: int = Depends(get_user_id_from_jwt),
-):
+) -> CategoryRead:
     # return the created category directly to match response_model=CategoryRead
     return await services.create_category(category_create, user_id)
 

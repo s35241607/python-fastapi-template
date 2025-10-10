@@ -28,10 +28,30 @@ def include_object(object, name, type_, reflected, compare_to):
     """
     過濾函數，只包含指定 schema 的對象
     """
-    # 只包含屬於設定 schema 的物件（無論是反射出來的或模型定義的）
-    obj_schema = getattr(object, "schema", None)
-    # 若物件明確屬於目標 schema，包含；否則排除
-    return obj_schema == settings.db_schema
+    if type_ == "table":
+        # 對於表，只包含 ticket schema 的表
+        return getattr(object, "schema", None) == settings.db_schema
+    elif type_ == "column":
+        # 對於欄位，檢查其父表是否在正確的 schema
+        table = getattr(object, "table", None)
+        if table is not None:
+            return getattr(table, "schema", None) == settings.db_schema
+        return False
+    elif type_ == "index":
+        # 對於索引，檢查其表是否在正確的 schema
+        table = getattr(object, "table", None)
+        if table is not None:
+            return getattr(table, "schema", None) == settings.db_schema
+        return False
+    elif type_ == "constraint":
+        # 對於約束，檢查其表是否在正確的 schema
+        table = getattr(object, "table", None)
+        if table is not None:
+            return getattr(table, "schema", None) == settings.db_schema
+        return False
+    else:
+        # 對於其他類型的物件（如 sequence），檢查 schema
+        return getattr(object, "schema", None) == settings.db_schema
 
 
 def run_migrations_offline() -> None:
