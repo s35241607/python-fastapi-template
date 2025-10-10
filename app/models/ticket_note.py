@@ -21,7 +21,7 @@ class TicketNote(Base):
     __table_args__ = {"schema": settings.db_schema}
 
     id = Column(BigInteger, primary_key=True)
-    ticket_id = Column(BigInteger, ForeignKey("ticket.tickets.id", ondelete="CASCADE"), nullable=False)
+    ticket_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.tickets.id", ondelete="CASCADE"), nullable=False)
     author_id = Column(BigInteger, nullable=False)
     note = Column(Text)
     system = Column(Boolean, nullable=False)
@@ -29,8 +29,6 @@ class TicketNote(Base):
     event_details = Column(JSON)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, onupdate=func.now())
-    deleted_by = Column(BigInteger)
-    deleted_at = Column(DateTime(timezone=True))
+    is_deleted = Column(Boolean, nullable=False, default=False)  # Replaced soft delete columns
 
     ticket = relationship("Ticket", back_populates="notes")
-    attachments = relationship("TicketNoteAttachment", back_populates="note")

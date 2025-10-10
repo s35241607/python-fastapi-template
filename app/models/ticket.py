@@ -1,6 +1,7 @@
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,  # Added
     Column,
     DateTime,
     Enum,
@@ -58,15 +59,13 @@ class Ticket(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_by = Column(BigInteger)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    deleted_by = Column(BigInteger)
-    deleted_at = Column(DateTime(timezone=True))
+    is_deleted = Column(Boolean, nullable=False, default=False)  # Replaced soft delete columns
     assigned_to = Column(BigInteger)
 
     categories = relationship("Category", secondary=ticket_categories, back_populates="tickets")
     labels = relationship("Label", secondary=ticket_labels, back_populates="tickets")
     ticket_template = relationship("TicketTemplate", back_populates="tickets")
     approval_template = relationship("ApprovalTemplate")
-    attachments = relationship("TicketAttachment", back_populates="ticket")
     view_permissions = relationship("TicketViewPermission", back_populates="ticket")
     notes = relationship("TicketNote", back_populates="ticket")
     approval_process = relationship("ApprovalProcess", uselist=False, back_populates="ticket")

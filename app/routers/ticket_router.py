@@ -4,7 +4,7 @@ from app.auth.dependencies import get_user_id_from_jwt
 from app.schemas.ticket import TicketCreate, TicketRead
 from app.services.ticket_service import TicketService
 
-router = APIRouter(prefix="/tickets", tags=["tickets"])
+router = APIRouter()
 
 
 def get_ticket_service(ticket_service: TicketService = Depends(TicketService)) -> TicketService:

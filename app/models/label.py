@@ -1,5 +1,6 @@
 from sqlalchemy import (
     BigInteger,
+    Boolean,  # Added
     Column,
     DateTime,
     String,
@@ -23,10 +24,9 @@ class Label(Base):
     description = Column(Text)
     created_by = Column(BigInteger)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_by = Column(BigInteger)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    is_deleted = Column(Boolean, nullable=False, default=False)  # Replaced soft delete columns
 
     ticket_templates = relationship("TicketTemplate", secondary=ticket_template_labels, back_populates="labels")
     tickets = relationship("Ticket", secondary=ticket_labels, back_populates="labels")
-    updated_by = Column(BigInteger)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    deleted_by = Column(BigInteger)
-    deleted_at = Column(DateTime(timezone=True))

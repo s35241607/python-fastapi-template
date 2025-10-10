@@ -1,5 +1,6 @@
 from sqlalchemy import (
     BigInteger,
+    Boolean,  # Added
     Column,
     DateTime,
     String,
@@ -21,8 +22,7 @@ class ApprovalTemplate(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_by = Column(BigInteger)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    deleted_by = Column(BigInteger)
-    deleted_at = Column(DateTime(timezone=True))
+    is_deleted = Column(Boolean, nullable=False, default=False)  # Replaced soft delete columns
 
     steps = relationship("ApprovalTemplateStep", back_populates="approval_template")
     ticket_templates = relationship("TicketTemplate", back_populates="approval_template")

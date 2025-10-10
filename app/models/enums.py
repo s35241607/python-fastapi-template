@@ -31,6 +31,12 @@ class ApprovalProcessStepStatus(str, enum.Enum):
     REJECTED = "rejected"
 
 
+# NEW: Added from ticket_system_schema.sql
+class ApprovalStepType(str, enum.Enum):
+    ALL = "all"  # All approvers must approve
+    ANY = "any"  # Any one approver can approve
+
+
 class TicketEventType(str, enum.Enum):
     STATE_CHANGE = "state_change"
     TITLE_CHANGE = "title_change"
@@ -58,3 +64,9 @@ class NotificationEvent(str, enum.Enum):
 class TicketVisibility(str, enum.Enum):
     INTERNAL = "internal"
     RESTRICTED = "restricted"
+
+
+# NEW: Added from ticket_system_schema.sql
+class AttachmentUsageType(str, enum.Enum):
+    INLINE = "inline"
+    GENERAL = "general"
