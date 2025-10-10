@@ -28,15 +28,10 @@ def include_object(object, name, type_, reflected, compare_to):
     """
     過濾函數，只包含指定 schema 的對象
     """
-    # 對於 reflected 對象（從數據庫讀取的），只包含目標 schema
-    if reflected:
-        if hasattr(object, "schema") and object.schema:
-            return object.schema == settings.db_schema
-        # 如果沒有 schema 或為空，可能是 public schema，排除
-        return False
-
-    # 對於我們的模型定義的對象，總是包含
-    return True
+    # 只包含屬於設定 schema 的物件（無論是反射出來的或模型定義的）
+    obj_schema = getattr(object, "schema", None)
+    # 若物件明確屬於目標 schema，包含；否則排除
+    return obj_schema == settings.db_schema
 
 
 def run_migrations_offline() -> None:
@@ -57,7 +52,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        include_schemas=False,  # 只考慮目標 schema
+        include_schemas=True,  # 啟用 schema-aware reflection，以正確比對非預設 schema 的物件
         include_object=include_object,
         version_table_schema=settings.db_schema,
     )
@@ -70,7 +65,7 @@ def do_run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        include_schemas=False,  # 只考慮目標 schema
+        include_schemas=True,  # 啟用 schema-aware reflection，以正確比對非預設 schema 的物件
         include_object=include_object,
         version_table_schema=settings.db_schema,
     )
