@@ -25,9 +25,9 @@ CREATE TYPE approval_process_status AS ENUM ('pending', 'approved', 'rejected');
 
 CREATE TYPE approval_process_step_status AS ENUM ('pending', 'approved', 'rejected');
 
--- NEW: 定義簽核步驟的類型
-CREATE TYPE approval_step_type AS ENUM ('all', -- 會簽：所有人都需簽核
-'any' -- 或簽：任一人簽核即可
+CREATE TYPE approval_step_type AS ENUM (
+  'all', -- 會簽：所有人都需簽核
+  'any'  -- 或簽：任一人簽核即可
 );
 
 CREATE TYPE ticket_event_type AS ENUM (
@@ -55,9 +55,8 @@ CREATE TYPE notification_event AS ENUM (
 );
 
 CREATE TYPE ticket_visibility AS ENUM (
-  'internal',
-  -- 內部公開 (所有登入者可見)
-  'restricted' -- 限制訪問 (僅特定人員/角色可見)
+  'internal',   -- 內部公開 (所有登入者可見)
+  'restricted'  -- 限制訪問 (僅特定人員/角色可見)
 );
 
 CREATE TYPE attachment_usage_type AS ENUM ('inline', 'general');
@@ -79,8 +78,7 @@ CREATE TABLE categories (
 CREATE TABLE labels (
   id BIGSERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE,
-  color VARCHAR(7) NOT NULL,
-  -- #RRGGBB
+  color VARCHAR(7) NOT NULL, -- #RRGGBB
   description TEXT,
   created_by BIGINT,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -129,21 +127,19 @@ CREATE TABLE tickets (
   ticket_no VARCHAR(50) NOT NULL UNIQUE,
   title VARCHAR(200) NOT NULL,
   description TEXT,
-  ticket_template_id BIGINT REFERENCES ticket_templates(id) ON DELETE
-  SET
-    NULL,
-    approval_template_id BIGINT,
-    custom_fields_data JSONB,
-    status ticket_status NOT NULL DEFAULT 'draft',
-    priority ticket_priority DEFAULT 'medium',
-    visibility ticket_visibility NOT NULL DEFAULT 'internal',
-    due_date TIMESTAMPTZ,
-    created_by BIGINT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_by BIGINT,
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    is_deleted BOOLEAN NOT NULL DEFAULT false,
-    assigned_to BIGINT
+  ticket_template_id BIGINT REFERENCES ticket_templates(id) ON DELETE SET NULL,
+  approval_template_id BIGINT,
+  custom_fields_data JSONB,
+  status ticket_status NOT NULL DEFAULT 'draft',
+  priority ticket_priority DEFAULT 'medium',
+  visibility ticket_visibility NOT NULL DEFAULT 'internal',
+  due_date TIMESTAMPTZ,
+  created_by BIGINT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_by BIGINT,
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  is_deleted BOOLEAN NOT NULL DEFAULT false,
+  assigned_to BIGINT
 );
 
 COMMENT ON COLUMN tickets.approval_template_id IS '此 Ticket 所使用的簽核範本 ID。';
@@ -174,13 +170,13 @@ CREATE TABLE ticket_labels (
 -- 統一附件表 (Attachments)
 -- =========================================
 CREATE TABLE attachments (
-  id BIGSERIAL PRIMARY KEY,
-  related_type VARCHAR(50) NOT NULL,
-  -- 'tickets', 'ticket_notes', 'ticket_templates', ...
-  related_id BIGINT NOT NULL,
-  -- 指向不同資源
-  ticket_id BIGINT,
-  -- 快速查詢
+  id BIGSERIAL PRIMARY KEY, -- 內部 ID，用於資料庫內部關聯，高效能。
+  uuid UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE, -- 外部 ID，用於 API、URL 和檔案系統，安全且穩定。
+
+  related_type VARCHAR(50) NOT NULL, -- e.g. 'tickets', 'ticket_notes', 'ticket_templates', ...
+  related_id BIGINT NOT NULL, -- 指向不同資源的 ID
+  ticket_id BIGINT, -- 反正規化欄位，用於快速查詢某工單下的所有附件
+
   usage_type attachment_usage_type NOT NULL DEFAULT 'general',
   file_name VARCHAR(255) NOT NULL,
   storage_path VARCHAR(500) NOT NULL,
@@ -195,13 +191,8 @@ CREATE TABLE attachments (
   is_deleted BOOLEAN NOT NULL DEFAULT false
 );
 
-CREATE INDEX idx_attachments_related_not_deleted ON attachments (related_type, related_id)
-WHERE
-  is_deleted = false;
-
-CREATE INDEX idx_attachments_ticket_id ON attachments (ticket_id)
-WHERE
-  is_deleted = false;
+CREATE INDEX idx_attachments_related_not_deleted ON attachments (related_type, related_id) WHERE is_deleted = false;
+CREATE INDEX idx_attachments_ticket_id ON attachments (ticket_id) WHERE is_deleted = false;
 
 -- =========================================
 -- 權限設定
@@ -215,16 +206,7 @@ CREATE TABLE ticket_view_permissions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_by BIGINT,
   updated_at TIMESTAMPTZ DEFAULT now(),
-  CONSTRAINT chk_permission_target CHECK (
-    (
-      user_id IS NOT NULL
-      AND role_id IS NULL
-    )
-    OR (
-      user_id IS NULL
-      AND role_id IS NOT NULL
-    )
-  ),
+  CONSTRAINT chk_permission_target CHECK ( (user_id IS NOT NULL AND role_id IS NULL) OR (user_id IS NULL AND role_id IS NOT NULL) ),
   UNIQUE (ticket_id, user_id, role_id)
 );
 
@@ -248,18 +230,7 @@ CREATE TABLE ticket_notes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   is_deleted BOOLEAN NOT NULL DEFAULT false,
-  CONSTRAINT chk_note_type CHECK (
-    (
-      system IS TRUE
-      AND event_type IS NOT NULL
-      AND note IS NULL
-    )
-    OR (
-      system IS FALSE
-      AND event_type IS NULL
-      AND note IS NOT NULL
-    )
-  )
+  CONSTRAINT chk_note_type CHECK ( (system IS TRUE AND event_type IS NOT NULL AND note IS NULL) OR (system IS FALSE AND event_type IS NULL AND note IS NOT NULL) )
 );
 
 -- =========================================
@@ -277,26 +248,14 @@ CREATE TABLE approval_templates (
 
 COMMENT ON TABLE approval_templates IS '儲存可重複使用的簽核流程範本';
 
-ALTER TABLE
-  ticket_templates
-ADD
-  CONSTRAINT fk_approval_template_id FOREIGN KEY (approval_template_id) REFERENCES approval_templates(id) ON DELETE
-SET
-  NULL;
-
-ALTER TABLE
-  tickets
-ADD
-  CONSTRAINT fk_approval_template_id FOREIGN KEY (approval_template_id) REFERENCES approval_templates(id) ON DELETE
-SET
-  NULL;
+ALTER TABLE ticket_templates ADD CONSTRAINT fk_approval_template_id FOREIGN KEY (approval_template_id) REFERENCES approval_templates(id) ON DELETE SET NULL;
+ALTER TABLE tickets ADD CONSTRAINT fk_tickets_approval_template_id FOREIGN KEY (approval_template_id) REFERENCES approval_templates(id) ON DELETE SET NULL;
 
 CREATE TABLE approval_template_steps (
   id BIGSERIAL PRIMARY KEY,
   approval_template_id BIGINT REFERENCES approval_templates(id) ON DELETE CASCADE,
   step_order INT NOT NULL,
   approval_type approval_step_type NOT NULL,
-  -- NEW: 新增簽核類型
   created_by BIGINT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_by BIGINT,
@@ -307,7 +266,6 @@ COMMENT ON TABLE approval_template_steps IS '定義簽核範本中的每一個�
 
 COMMENT ON COLUMN approval_template_steps.approval_type IS '簽核類型: all (所有人都需簽核), any (任一人簽核即可)';
 
--- NEW: 新增 `approval_template_step_approvers` 表，用於定義一個範本步驟中的所有簽核者
 CREATE TABLE approval_template_step_approvers (
   id BIGSERIAL PRIMARY KEY,
   approval_template_step_id BIGINT NOT NULL REFERENCES approval_template_steps(id) ON DELETE CASCADE,
@@ -317,16 +275,7 @@ CREATE TABLE approval_template_step_approvers (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_by BIGINT,
   updated_at TIMESTAMPTZ DEFAULT now(),
-  CONSTRAINT chk_template_approver_type CHECK (
-    (
-      role_id IS NOT NULL
-      AND user_id IS NULL
-    )
-    OR (
-      role_id IS NULL
-      AND user_id IS NOT NULL
-    )
-  ),
+  CONSTRAINT chk_template_approver_type CHECK ( (role_id IS NOT NULL AND user_id IS NULL) OR (role_id IS NULL AND user_id IS NOT NULL) ),
   UNIQUE (approval_template_step_id, role_id, user_id)
 );
 
@@ -338,18 +287,15 @@ COMMENT ON TABLE approval_template_step_approvers IS '定義範本步驟中的�
 CREATE TABLE approval_processes (
   id BIGSERIAL PRIMARY KEY,
   ticket_id BIGINT REFERENCES tickets(id) ON DELETE CASCADE UNIQUE,
-  approval_template_id BIGINT REFERENCES approval_templates(id) ON DELETE
-  SET
-    NULL,
-    status approval_process_status NOT NULL,
-    current_step INT DEFAULT 1,
-    created_by BIGINT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_by BIGINT,
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    is_deleted BOOLEAN NOT NULL DEFAULT false
+  approval_template_id BIGINT REFERENCES approval_templates(id) ON DELETE SET NULL,
+  status approval_process_status NOT NULL,
+  current_step INT DEFAULT 1,
+  created_by BIGINT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_by BIGINT,
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  is_deleted BOOLEAN NOT NULL DEFAULT false
 );
-
 COMMENT ON TABLE approval_processes IS '一個具體的、正在運行或已完成的簽核流程實例';
 
 CREATE TABLE approval_process_steps (
@@ -358,7 +304,6 @@ CREATE TABLE approval_process_steps (
   step_order INT NOT NULL,
   status approval_process_step_status NOT NULL DEFAULT 'pending',
   approval_type approval_step_type NOT NULL,
-  -- NEW: 從範本複製的簽核類型
   created_by BIGINT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_by BIGINT,
@@ -371,7 +316,6 @@ COMMENT ON COLUMN approval_process_steps.status IS '此步驟的匯總狀態 (�
 
 COMMENT ON COLUMN approval_process_steps.approval_type IS '簽核類型: all (所有人都需簽核), any (任一人簽核即可)';
 
--- NEW: 新增 `approval_process_step_approvers` 表，用於追蹤一個實例步驟中，每位簽核者的狀態
 CREATE TABLE approval_process_step_approvers (
   id BIGSERIAL PRIMARY KEY,
   approval_process_step_id BIGINT NOT NULL REFERENCES approval_process_steps(id) ON DELETE CASCADE,
@@ -390,23 +334,10 @@ CREATE TABLE approval_process_step_approvers (
   updated_by BIGINT,
   updated_at TIMESTAMPTZ DEFAULT now(),
   -- 確保每個 approver 都有明確的指派對象 (用戶或角色)
-  CONSTRAINT chk_approver_assignment CHECK (
-    (
-      user_id IS NOT NULL
-      AND role_id IS NULL
-    )
-    OR (
-      user_id IS NULL
-      AND role_id IS NOT NULL
-    )
-  ),
+  CONSTRAINT chk_approver_assignment CHECK ( (user_id IS NOT NULL AND role_id IS NULL) OR (user_id IS NULL AND role_id IS NOT NULL) ),
   -- 確保代理邏輯的完整性
-  CONSTRAINT chk_approver_proxy_logic CHECK (
-    (delegated_for_id IS NULL)
-    OR (actioned_by_id IS NOT NULL)
-  )
+  CONSTRAINT chk_approver_proxy_logic CHECK ( (delegated_for_id IS NULL) OR (actioned_by_id IS NOT NULL) )
 );
-
 COMMENT ON TABLE approval_process_step_approvers IS '追蹤一個簽核步驟中每位指定簽核者的獨立狀態';
 
 COMMENT ON COLUMN approval_process_step_approvers.user_id IS '此簽核任務指派的用戶 ID';
@@ -431,18 +362,8 @@ CREATE TABLE notification_rules (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_by BIGINT,
   updated_at TIMESTAMPTZ DEFAULT now(),
-  CONSTRAINT chk_notification_source CHECK (
-    (
-      ticket_template_id IS NOT NULL
-      AND ticket_id IS NULL
-    )
-    OR (
-      ticket_template_id IS NULL
-      AND ticket_id IS NOT NULL
-    )
-  )
+  CONSTRAINT chk_notification_source CHECK ( (ticket_template_id IS NOT NULL AND ticket_id IS NULL) OR (ticket_template_id IS NULL AND ticket_id IS NOT NULL) )
 );
-
 COMMENT ON COLUMN notification_rules.ticket_template_id IS '此規則所屬的範本 ID (與 ticket_id 擇一)';
 
 CREATE TABLE notification_rule_users (
@@ -486,8 +407,6 @@ CREATE INDEX idx_notification_rules_ticket_template_id ON notification_rules(tic
 
 CREATE INDEX idx_notification_rules_ticket_id ON notification_rules(ticket_id);
 
-CREATE INDEX idx_tickets_assigned_to_status ON tickets(assigned_to, status)
-WHERE
-  status NOT IN ('closed', 'cancelled');
+CREATE INDEX idx_tickets_assigned_to_status ON tickets(assigned_to, status) WHERE status NOT IN ('closed', 'cancelled');
 
 CREATE INDEX idx_ticket_view_permissions_ticket_id ON ticket_view_permissions(ticket_id);
