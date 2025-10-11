@@ -19,8 +19,8 @@ class Attachment(Base):
     __table_args__ = {"schema": settings.db_schema}
 
     id = Column(BigInteger, primary_key=True)
-    related_type = Column(String(50), nullable=False)  # e.g., 'tickets', 'ticket_notes'
-    related_id = Column(BigInteger, nullable=False)
+    related_type = Column(String(50), nullable=True)  # e.g., 'tickets', 'ticket_notes' - nullable for pre-upload
+    related_id = Column(BigInteger, nullable=True)
     ticket_id = Column(BigInteger)  # For quick lookup
     usage_type = Column(
         Enum(AttachmentUsageType, name="attachment_usage_type", schema=settings.db_schema),

@@ -173,8 +173,8 @@ CREATE TABLE attachments (
   id BIGSERIAL PRIMARY KEY, -- 內部 ID，用於資料庫內部關聯，高效能。
   uuid UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE, -- 外部 ID，用於 API、URL 和檔案系統，安全且穩定。
 
-  related_type VARCHAR(50) NOT NULL, -- e.g. 'tickets', 'ticket_notes', 'ticket_templates', ...
-  related_id BIGINT NOT NULL, -- 指向不同資源的 ID
+  related_type VARCHAR(50), -- e.g. 'tickets', 'ticket_notes', 'ticket_templates', ... (允許 NULL 支援預上傳)
+  related_id BIGINT, -- 指向不同資源的 ID (允許 NULL 支援預上傳)
   ticket_id BIGINT, -- 反正規化欄位，用於快速查詢某工單下的所有附件
 
   usage_type attachment_usage_type NOT NULL DEFAULT 'general',
