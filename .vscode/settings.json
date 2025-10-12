@@ -25,7 +25,7 @@
     "python.analysis.addImport.exactMatchOnly": false,
     "python.analysis.diagnosticMode": "workspace",
     "python.analysis.includeFileSpecs": ["**/*.py"],
-    "python.analysis.excludeFileSpecs": ["**/__pycache__/**", "**/.venv/**", "**/node_modules/**"],
+    "python.analysis.excludeFileSpecs": ["**/__pycache__/**", "**/.venv/**", "**/node_modules/**", "**/alembic/**", "**/tests/**",],
     "python.linting.enabled": true,
     "python.linting.ruffEnabled": true,
     "editor.codeActionWidget.include": ["source.addMissingImports", "quickfix", "refactor"],

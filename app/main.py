@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from app.config import settings
 from app.handlers.error_handlers import register_exception_handlers
-from app.routers import category_router, label_router, public_router, test_router, ticket_router
+from app.routers import attachment_router, category_router, label_router, public_router, test_router, ticket_router
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -51,14 +51,15 @@ app.add_middleware(
 
 
 # Mount public routes without global dependencies
-app.include_router(public_router.router, dependencies=[])
+app.include_router(public_router, dependencies=[])
 
 # Test router to inspect JWT payloads (dev behavior: no signature verification)
-app.include_router(test_router.router, prefix="/api/v1/test", tags=["test"])
+app.include_router(test_router, prefix="/api/v1/test", tags=["test"])
 
-app.include_router(category_router.router, prefix="/api/v1/categories", tags=["categories"])
-app.include_router(label_router.router, prefix="/api/v1/labels", tags=["labels"])
-app.include_router(ticket_router.router, prefix="/api/v1/tickets", tags=["tickets"])
+app.include_router(category_router, prefix="/api/v1/categories", tags=["categories"])
+app.include_router(label_router, prefix="/api/v1/labels", tags=["labels"])
+app.include_router(ticket_router, prefix="/api/v1/tickets", tags=["tickets"])
+app.include_router(attachment_router, prefix="/api/v1/attachments", tags=["attachments"])
 
 
 if __name__ == "__main__":
