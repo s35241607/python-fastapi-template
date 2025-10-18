@@ -36,12 +36,12 @@ class TicketRepository(BaseRepository[Ticket, TicketCreate, TicketUpdate, Ticket
 
     async def get_by_ticket_no(self, ticket_no: str) -> Ticket | TicketRead | None:
         """根據工單號查詢工單"""
-        statement = select(self.model).where(and_(self.model.ticket_no == ticket_no, self.model.deleted_at.is_(None)))
+        statement = select(self.model).where(and_(self.model.ticket_no == ticket_no, self.model.is_deleted.is_(False)))
         result = await self.db.execute(statement)
         return self._convert_one(result.scalar_one_or_none())
 
     async def get_by_created_by(self, created_by: int) -> list[Ticket] | list[TicketRead]:
         """根據建立者查詢工單列表"""
-        statement = select(self.model).where(and_(self.model.created_by == created_by, self.model.deleted_at.is_(None)))
+        statement = select(self.model).where(and_(self.model.created_by == created_by, self.model.is_deleted.is_(None)))
         result = await self.db.execute(statement)
         return self._convert_many(result.scalars().all())

@@ -85,7 +85,7 @@ class BaseRepository[
             stmt = stmt.options(*options)
 
         if not include_deleted and hasattr(self.model, "is_deleted"):
-            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
+            stmt = stmt.where(not self.model.is_deleted)  # type: ignore[attr-defined]
         result = await self.db.execute(stmt)
         return self._convert_one(result.scalar_one_or_none())
 
@@ -103,7 +103,7 @@ class BaseRepository[
             stmt = stmt.options(*options)
 
         if not include_deleted and hasattr(self.model, "is_deleted"):
-            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
+            stmt = stmt.where(not self.model.is_deleted)  # type: ignore[attr-defined]
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -118,7 +118,7 @@ class BaseRepository[
             stmt = stmt.options(*options)
 
         if not include_deleted and hasattr(self.model, "is_deleted"):
-            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
+            stmt = stmt.where(not self.model.is_deleted)  # type: ignore[attr-defined]
         result = await self.db.execute(stmt)
         return self._convert_many(result.scalars().all())
 
@@ -136,7 +136,7 @@ class BaseRepository[
             stmt = stmt.options(*options)
 
         if not include_deleted and hasattr(self.model, "is_deleted"):
-            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
+            stmt = stmt.where(not self.model.is_deleted)  # type: ignore[attr-defined]
 
         if filters:
             for field, value in filters.items():
@@ -230,6 +230,6 @@ class BaseRepository[
     ) -> ModelType | None:
         stmt = select(self.model).where(self.model.id == obj_id)  # type: ignore[attr-defined]
         if not include_deleted and hasattr(self.model, "is_deleted"):
-            stmt = stmt.where(self.model.is_deleted == False)  # type: ignore[attr-defined]
+            stmt = stmt.where(not self.model.is_deleted)  # type: ignore[attr-defined]
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
