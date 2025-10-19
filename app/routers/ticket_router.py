@@ -34,6 +34,26 @@ async def get_tickets(
     return page_result
 
 
+@router.get("/{ticket_id}", response_model=TicketRead)
+async def get_ticket_by_id(
+    ticket_id: int,
+    ticket_service: TicketService = Depends(get_ticket_service),
+    current_user_id: int = Depends(get_user_id_from_jwt),
+) -> TicketRead:
+    """以 id 取得單一工單"""
+    return await ticket_service.get_ticket_by_id(ticket_id, current_user_id)
+
+
+@router.get("/by-ticket-no/{ticket_no}", response_model=TicketRead)
+async def get_ticket_by_ticket_no(
+    ticket_no: str,
+    ticket_service: TicketService = Depends(get_ticket_service),
+    current_user_id: int = Depends(get_user_id_from_jwt),
+) -> TicketRead:
+    """以 ticket_no 取得單一工單"""
+    return await ticket_service.get_ticket_by_ticket_no(ticket_no, current_user_id)
+
+
 # @router.get("/my", response_model=list[TicketRead])
 
 

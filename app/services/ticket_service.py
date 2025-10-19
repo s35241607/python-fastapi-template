@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import selectinload
 
 from app.models.category import Category
@@ -69,3 +69,30 @@ class TicketService:
         # Ensure items are validated into TicketRead (repo returns converted ReadSchemaType)
         # The repository returns PaginationResponse[ReadSchemaType], which is compatible with TicketRead
         return paginated
+
+    async def get_ticket_by_id(self, ticket_id: int, current_user_id: int) -> TicketRead:
+        """
+        以 ID 取得單一工單；若不存在則回傳 404。
+
+        Business logic (如權限檢查)應該放在此層（目前僅處理不存在的情況）。
+        """
+        ticket = await self.ticket_repo.get_by_id(
+            ticket_id, include_deleted=False, options=[selectinload(Ticket.categories), selectinload(Ticket.labels)]
+        )
+        if not ticket:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        # repository 已經會回傳 ReadSchemaType（若 auto_convert 開啟），但為保險起見，確保回傳 TicketRead
+        return TicketRead.model_validate(ticket, from_attributes=True)
+
+    async def get_ticket_by_ticket_no(self, ticket_no: str, current_user_id: int) -> TicketRead:
+        """
+        以 ticket_no 取得單一工單；若不存在則回傳 404。
+
+        為了同時載入關聯（categories/labels），先透過 ticket_no 找到 id，然後以 get_by_id 帶 preload 撈取完整資料。
+        """
+        ticket = await self.ticket_repo.get_by_ticket_no(
+            ticket_no, include_deleted=False, options=[selectinload(Ticket.categories), selectinload(Ticket.labels)]
+        )
+        if not ticket:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+        return TicketRead.model_validate(ticket, from_attributes=True)

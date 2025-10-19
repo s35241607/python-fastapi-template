@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import Depends
 from sqlalchemy import and_, select
@@ -34,9 +35,25 @@ class TicketRepository(BaseRepository[Ticket, TicketCreate, TicketUpdate, Ticket
 
         return f"TIC-{today}-{new_sequence_no}"
 
-    async def get_by_ticket_no(self, ticket_no: str) -> Ticket | TicketRead | None:
-        """根據工單號查詢工單"""
-        statement = select(self.model).where(and_(self.model.ticket_no == ticket_no, self.model.is_deleted.is_(False)))
+    async def get_by_ticket_no(
+        self,
+        ticket_no: str,
+        include_deleted: bool = False,
+        options: list[Any] | None = None,
+    ) -> Ticket | TicketRead | None:
+        """
+        根據工單號查詢工單，支援 include_deleted 與 SQLAlchemy options (例如 selectinload)
+
+        Args:
+            ticket_no: 工單號
+            include_deleted: 是否包含已軟刪除
+            options: SQLAlchemy 查詢 options
+        """
+        statement = select(self.model).where(self.model.ticket_no == ticket_no)
+        if options:
+            statement = statement.options(*options)
+        if not include_deleted and hasattr(self.model, "is_deleted"):
+            statement = statement.where(self.model.is_deleted.is_(False))
         result = await self.db.execute(statement)
         return self._convert_one(result.scalar_one_or_none())
 
