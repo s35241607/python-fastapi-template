@@ -1,9 +1,32 @@
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel, Field
+
+T = TypeVar("T")
 
 
 class SuccessResponse[T](BaseModel):
     message: str | None = Field(default=None, description="成功訊息，可選")
     data: T | None = Field(default=None, description="響應資料，可選")
+
+
+class Page(BaseModel, Generic[T]):
+    total: int = Field(..., description="總筆數")
+    page: int = Field(..., description="目前頁碼")
+    page_size: int = Field(..., description="每頁筆數")
+    items: list[T] = Field(default_factory=list, description="分頁項目列表")
+
+    # 更完整的分頁回應
+
+
+class PaginationResponse(BaseModel, Generic[T]):
+    total: int = Field(..., description="總筆數")
+    page: int = Field(..., description="目前頁碼")
+    page_size: int = Field(..., description="每頁筆數")
+    total_pages: int = Field(..., description="總頁數")
+    has_next: bool = Field(..., description="是否有下一頁")
+    has_prev: bool = Field(..., description="是否有上一頁")
+    items: list[T] = Field(default_factory=list, description="分頁資料")
 
 
 class ErrorDetail(BaseModel):

@@ -1,11 +1,47 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.enums import TicketPriority, TicketStatus, TicketVisibility
+from app.models.ticket import Ticket
 from app.schemas.category import CategoryRead
 from app.schemas.label import LabelRead
+from app.schemas.pagination import PaginationQuery
+
+# 查詢參數 schema
+
+
+class TicketQueryParams(PaginationQuery):
+    # Filters flattened for query parameters
+    status: TicketStatus | None = Field(None, description="工單狀態")
+    priority: TicketPriority | None = Field(None, description="優先順序")
+    visibility: TicketVisibility | None = Field(None, description="可見性")
+    assigned_to: int | None = Field(None, description="指派對象")
+    created_by: int | None = Field(None, description="建立者")
+    ticket_template_id: int | None = Field(None, description="工單模板")
+    approval_template_id: int | None = Field(None, description="簽核模板")
+
+    @classmethod
+    def _normalize_sort_order(cls, v: str | None):
+        if v is None:
+            return "desc"
+        low = v.lower()
+        return "asc" if low == "asc" else "desc"
+
+    _norm_sort_order = field_validator("sort_order", mode="before", check_fields=False)(_normalize_sort_order)
+
+    @classmethod
+    def _validate_sort_by(cls, v: str | None):
+        if not v:
+            return "created_at"
+        allowed = {c.key for c in Ticket.__table__.columns}
+        return v if v in allowed else "created_at"
+
+    _validate_sort_by_field = field_validator("sort_by", mode="before", check_fields=False)(_validate_sort_by)
+
+
+# ...existing code...
 
 
 class TicketBase(BaseModel):

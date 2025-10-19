@@ -1,5 +1,3 @@
-from typing import cast
-
 from fastapi import Depends
 from sqlalchemy.orm import selectinload
 
@@ -10,7 +8,8 @@ from app.models.ticket import Ticket
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.label_repository import LabelRepository
 from app.repositories.ticket_repository import TicketRepository
-from app.schemas.ticket import TicketCreate, TicketRead
+from app.schemas.response import PaginationResponse
+from app.schemas.ticket import TicketCreate, TicketQueryParams, TicketRead
 
 
 class TicketService:
@@ -51,7 +50,22 @@ class TicketService:
         created_ticket = await self.ticket_repo.create(ticket, created_by, preload=[Ticket.categories, Ticket.labels])
         return TicketRead.model_validate(created_ticket, from_attributes=True)
 
-    async def get_tickets(self) -> list[TicketRead]:
-        """取得工單列表"""
-        tickets = await self.ticket_repo.get_all(options=[selectinload(Ticket.categories), selectinload(Ticket.labels)])
-        return cast(list[TicketRead], tickets)
+    async def get_tickets(
+        self,
+        query: TicketQueryParams,
+        current_user_id: int,
+    ) -> PaginationResponse[TicketRead]:
+        """
+        取得分頁工單列表，支援篩選與排序，回傳 PaginationResponse 結構
+        """
+        # pagination will be handled by repository with page/page_size
+        # sorting handled by the repository using the passed query
+        # let repository extract filters, pagination and sorting from the pydantic query
+        # Repository now returns PaginationResponse[TicketRead]
+        paginated = await self.ticket_repo.get_paginated(
+            query=query,
+            options=[selectinload(Ticket.categories), selectinload(Ticket.labels)],
+        )
+        # Ensure items are validated into TicketRead (repo returns converted ReadSchemaType)
+        # The repository returns PaginationResponse[ReadSchemaType], which is compatible with TicketRead
+        return paginated

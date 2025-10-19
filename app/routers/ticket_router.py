@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, status
 
 from app.auth.dependencies import get_user_id_from_jwt
-from app.schemas.ticket import TicketCreate, TicketRead
+from app.schemas.response import PaginationResponse
+from app.schemas.ticket import TicketCreate, TicketQueryParams, TicketRead
 from app.services.ticket_service import TicketService
 
 router = APIRouter()
@@ -22,14 +23,15 @@ async def create_ticket(
     return created_ticket
 
 
-@router.get("/", response_model=list[TicketRead])
+@router.get("/", response_model=PaginationResponse[TicketRead])
 async def get_tickets(
+    query: TicketQueryParams = Depends(),
     ticket_service: TicketService = Depends(get_ticket_service),
     current_user_id: int = Depends(get_user_id_from_jwt),
-) -> list[TicketRead]:
+) -> PaginationResponse[TicketRead]:
     """取得工單列表"""
-    tickets = await ticket_service.get_tickets()
-    return tickets
+    page_result = await ticket_service.get_tickets(query, current_user_id)
+    return page_result
 
 
 # @router.get("/my", response_model=list[TicketRead])
