@@ -8,7 +8,6 @@
     // is also set to "ruff" for tools that read that setting.
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff",
-    "python.formatting.provider": "ruff",
 
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff"
@@ -24,10 +23,9 @@
     "python.analysis.autoImportCompletions": true,
     "python.analysis.addImport.exactMatchOnly": false,
     "python.analysis.diagnosticMode": "workspace",
-    "python.analysis.includeFileSpecs": ["**/*.py"],
-    "python.analysis.excludeFileSpecs": ["**/__pycache__/**", "**/.venv/**", "**/node_modules/**", "**/alembic/**", "**/tests/**",],
-    "python.linting.enabled": true,
-    "python.linting.ruffEnabled": true,
+    "python.analysis.include": ["**/*.py"],
+    "python.analysis.exclude": ["**/__pycache__/**", "**/.venv/**", "**/node_modules/**", "**/alembic/**", "**/tests/**"],
+
     "editor.codeActionWidget.include": ["source.addMissingImports", "quickfix", "refactor"],
     "editor.quickSuggestions": {
         "other": true,
