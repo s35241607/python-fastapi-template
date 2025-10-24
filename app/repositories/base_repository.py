@@ -374,6 +374,12 @@ class BaseRepository[
         if hasattr(db_obj, "created_by") and user_id:
             db_obj.created_by = user_id  # type: ignore
 
+        # 自動設置 created_at（若欄位存在）
+        if hasattr(db_obj, "created_at"):
+            from datetime import datetime
+
+            db_obj.created_at = datetime.utcnow()  # type: ignore
+
         self.db.add(db_obj)
         await self.db.flush()
 
@@ -389,6 +395,7 @@ class BaseRepository[
         obj_id: Any,
         obj_in: UpdateSchemaType | ModelType | dict[str, Any],
         user_id: int | None = None,
+        preload: list[InstrumentedAttribute[Any]] | None = None,
     ) -> ModelType | ReadSchemaType | None:
         """
         更新指定 ID 的物件。
@@ -416,9 +423,20 @@ class BaseRepository[
         if hasattr(db_obj, "updated_by") and user_id:
             db_obj.updated_by = user_id  # type: ignore
 
+        # 自動設置 updated_at（若欄位存在）
+        if hasattr(db_obj, "updated_at"):
+            from datetime import datetime
+
+            db_obj.updated_at = datetime.utcnow()  # type: ignore
+
         self.db.add(db_obj)
         await self.db.flush()
-        await self.db.refresh(db_obj)
+
+        if preload:
+            attribute_names: list[str] = [attr.key for attr in preload]  # 型別安全轉成字串
+            await self.db.refresh(db_obj, attribute_names=attribute_names)
+        else:
+            await self.db.refresh(db_obj)
         return self._convert_one(db_obj)
 
     async def delete(self, obj_id: Any) -> ModelType | ReadSchemaType | None:

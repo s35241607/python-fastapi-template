@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -10,23 +10,21 @@ class SuccessResponse[T](BaseModel):
     data: T | None = Field(default=None, description="響應資料，可選")
 
 
-class Page(BaseModel, Generic[T]):
+class Page[T](BaseModel):
     total: int = Field(..., description="總筆數")
     page: int = Field(..., description="目前頁碼")
     page_size: int = Field(..., description="每頁筆數")
-    items: list[T] = Field(default_factory=list, description="分頁項目列表")
-
-    # 更完整的分頁回應
+    items: list[T] = Field(default_factory=list, description="分頁項目列表")  # type: ignore
 
 
-class PaginationResponse(BaseModel, Generic[T]):
+class PaginationResponse[T](BaseModel):
     total: int = Field(..., description="總筆數")
     page: int = Field(..., description="目前頁碼")
     page_size: int = Field(..., description="每頁筆數")
     total_pages: int = Field(..., description="總頁數")
     has_next: bool = Field(..., description="是否有下一頁")
     has_prev: bool = Field(..., description="是否有上一頁")
-    items: list[T] = Field(default_factory=list, description="分頁資料")
+    items: list[T] = Field(default_factory=list, description="分頁資料")  # type: ignore
 
 
 class ErrorDetail(BaseModel):

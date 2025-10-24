@@ -65,6 +65,12 @@ class TicketCreate(TicketBase):
 
 
 class TicketUpdate(BaseModel):
+    """Ticket 更新 Schema - 不繼承 TicketBase 因為需要所有欄位都是可選的
+
+    雖然理論上可以覆寫欄位為可選，但 Pydantic 的類型系統不允許這樣做，
+    所以選擇獨立定義以保持清晰和避免類型錯誤。
+    """
+
     title: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = None
     priority: TicketPriority | None = None
@@ -104,3 +110,20 @@ class TicketRead(TicketBase):
 class TicketStatusUpdate(BaseModel):
     status: TicketStatus
     reason: str | None = Field(None, max_length=500, description="狀態變更原因")
+
+
+# 特定欄位更新的請求模型
+class TicketTitleUpdate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+
+
+class TicketDescriptionUpdate(BaseModel):
+    description: str | None = None
+
+
+class TicketAssigneeUpdate(BaseModel):
+    assigned_to: int | None = None
+
+
+class TicketLabelsUpdate(BaseModel):
+    label_ids: list[int]
