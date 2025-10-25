@@ -9,6 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
+from app.config import settings
 from app.models.base import Base
 from app.models.ticket import ticket_categories
 from app.models.ticket_template import ticket_template_categories
@@ -16,7 +17,7 @@ from app.models.ticket_template import ticket_template_categories
 
 class Category(Base):
     __tablename__ = "categories"
-    __table_args__ = {"schema": "ticket"}
+    __table_args__ = {"schema": settings.db_schema}
 
     id = Column(BigInteger, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)  # Added unique=True

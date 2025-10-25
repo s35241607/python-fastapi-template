@@ -22,7 +22,7 @@ ticket_categories = Table(
     Base.metadata,
     Column("ticket_id", BigInteger, ForeignKey(f"{settings.db_schema}.tickets.id", ondelete="CASCADE"), primary_key=True),
     Column("category_id", BigInteger, ForeignKey(f"{settings.db_schema}.categories.id", ondelete="CASCADE"), primary_key=True),
-    schema="ticket",
+    schema=settings.db_schema,
 )
 
 ticket_labels = Table(
@@ -30,7 +30,7 @@ ticket_labels = Table(
     Base.metadata,
     Column("ticket_id", BigInteger, ForeignKey(f"{settings.db_schema}.tickets.id", ondelete="CASCADE"), primary_key=True),
     Column("label_id", BigInteger, ForeignKey(f"{settings.db_schema}.labels.id", ondelete="CASCADE"), primary_key=True),
-    schema="ticket",
+    schema=settings.db_schema,
 )
 
 
