@@ -418,7 +418,8 @@ class BaseRepository[
             else self._extract_data_from_input(obj_in)
         )
         for field, value in data.items():
-            if hasattr(db_obj, field):
+            # 檢查欄位是否存在於模型的表格定義中，避免觸發懶載入
+            if field in db_obj.__table__.columns:
                 setattr(db_obj, field, value)
         if hasattr(db_obj, "updated_by") and user_id:
             db_obj.updated_by = user_id  # type: ignore
