@@ -9,7 +9,7 @@ async def get_user_id_from_jwt(token: HTTPAuthorizationCredentials = Depends(bea
     try:
         # Decode without verification as per user's request
         # In a real application, you would verify the token with a secret key
-        payload = jwt.decode(token.credentials, "", options={"verify_signature": False})
+        payload = jwt.decode(token.credentials, "", algorithms=["HS256"], options={"verify_signature": False})
         sub = payload.get("sub")
         if sub is None:
             raise HTTPException(

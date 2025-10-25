@@ -9,7 +9,7 @@ from app.services.category_service import CategoryService
 router = APIRouter(dependencies=[Depends(get_user_id_from_jwt)])
 
 
-@router.post("/", response_model=CategoryRead)
+@router.post("/", response_model=CategoryRead, status_code=201)
 async def create_category(
     category_create: CategoryCreate,
     services: CategoryService = Depends(CategoryService),

@@ -7,7 +7,7 @@ Attachment Repository 的單元測試
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.attachment import Attachment
@@ -92,7 +92,7 @@ class TestAttachmentRepositoryGetByRelated:
 
         # 驗證 SQL 查詢
         call_args = mock_session.execute.call_args[0][0]
-        assert isinstance(call_args, select)
+        assert isinstance(call_args, Select)
 
     @pytest.mark.asyncio
     async def test_get_by_related_empty(self, attachment_repository, mock_session):
@@ -134,7 +134,7 @@ class TestAttachmentRepositoryGetByTicketId:
 
         # 驗證 SQL 查詢
         call_args = mock_session.execute.call_args[0][0]
-        assert isinstance(call_args, select)
+        assert isinstance(call_args, Select)
 
     @pytest.mark.asyncio
     async def test_get_by_ticket_id_empty(self, attachment_repository, mock_session):
@@ -183,6 +183,14 @@ class TestAttachmentRepositoryInheritance:
         """測試更新附件"""
         update_data = AttachmentUpdate(description="Updated description")
 
+        # 模擬數據庫操作
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = sample_attachment
+        mock_session.execute.return_value = mock_result
+        mock_session.add.return_value = None
+        mock_session.flush.return_value = None
+        mock_session.refresh.return_value = None
+
         # 模擬基類方法
         attachment_repository._convert_one = MagicMock(return_value=sample_attachment_read)
 
@@ -195,7 +203,9 @@ class TestAttachmentRepositoryInheritance:
     async def test_soft_delete_attachment(self, attachment_repository, mock_session, sample_attachment_read):
         """測試軟刪除附件"""
         # 模擬數據庫操作
-        mock_session.execute.return_value.scalar_one_or_none.return_value = sample_attachment
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = sample_attachment
+        mock_session.execute.return_value = mock_result
         mock_session.add.return_value = None
         mock_session.flush.return_value = None
         mock_session.refresh.return_value = None
@@ -213,7 +223,12 @@ class TestAttachmentRepositoryInheritance:
     @pytest.mark.asyncio
     async def test_get_all_attachments(self, attachment_repository, mock_session, sample_attachment, sample_attachment_read):
         """測試取得所有附件"""
-        # 模擬基類方法
+        # 模擬數據庫操作
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [sample_attachment]
+        mock_session.execute.return_value = mock_result
+
+        # 模擬轉換方法
         attachment_repository._convert_many = MagicMock(return_value=[sample_attachment_read])
 
         result = await attachment_repository.get_all()

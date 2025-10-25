@@ -59,6 +59,6 @@ class TicketRepository(BaseRepository[Ticket, TicketCreate, TicketUpdate, Ticket
 
     async def get_by_created_by(self, created_by: int) -> list[Ticket] | list[TicketRead]:
         """根據建立者查詢工單列表"""
-        statement = select(self.model).where(and_(self.model.created_by == created_by, self.model.is_deleted.is_(None)))
+        statement = select(self.model).where(and_(self.model.created_by == created_by, self.model.is_deleted.is_(False)))
         result = await self.db.execute(statement)
         return self._convert_many(result.scalars().all())

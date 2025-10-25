@@ -117,7 +117,9 @@ class TicketService:
         - 不允許透過此方法更改 status（需使用狀態轉換 endpoint）
         """
         # 1. 取得現有工單以驗證權限
-        existing_ticket = await self.ticket_repo.get_by_id(ticket_id, include_deleted=False)
+        existing_ticket = await self.ticket_repo.get_by_id(
+            ticket_id, include_deleted=False, options=[selectinload(Ticket.categories), selectinload(Ticket.labels)]
+        )
         if not existing_ticket:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
 

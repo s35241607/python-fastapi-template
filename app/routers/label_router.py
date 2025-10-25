@@ -7,7 +7,7 @@ from app.services.label_service import LabelService
 router = APIRouter(dependencies=[Depends(get_user_id_from_jwt)])
 
 
-@router.post("/", response_model=LabelRead)
+@router.post("/", response_model=LabelRead, status_code=201)
 async def create_label(
     label_create: LabelCreate,
     services: LabelService = Depends(LabelService),
