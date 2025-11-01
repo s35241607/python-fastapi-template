@@ -155,6 +155,7 @@ class TicketService:
             ticket_id,
             ticket,
             user_id=current_user_id,
+            preload=[Ticket.categories, Ticket.labels],
         )
 
         if not updated_ticket:
@@ -295,6 +296,7 @@ class TicketService:
             ticket_id,
             ticket,
             user_id=current_user_id,
+            preload=[Ticket.categories, Ticket.labels],
         )
 
         if not updated_ticket:

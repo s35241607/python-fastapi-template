@@ -69,6 +69,18 @@ def client():
         yield test_client
 
 
+@pytest_asyncio.fixture(scope="function")
+async def async_client():
+    """Create async HTTP client with test database"""
+    from httpx import ASGITransport, AsyncClient
+
+    from app.main import app as fastapi_app
+
+    # Create async client for testing
+    async with AsyncClient(transport=ASGITransport(app=fastapi_app), base_url="http://testserver") as test_client:
+        yield test_client
+
+
 @pytest_asyncio.fixture(scope="session")
 async def async_db_session(test_engine):
     """Create async database session for testing"""

@@ -47,7 +47,7 @@ class TestTicketIntegration:
         engine.dispose()
 
     @pytest.mark.asyncio
-    async def test_create_and_retrieve_ticket(self, client, auth_headers):
+    async def test_create_and_retrieve_ticket(self, async_client, auth_headers):
         """測試建立並查詢工單"""
         # 建立工單
         payload = {
@@ -59,7 +59,7 @@ class TestTicketIntegration:
             "label_ids": [],
         }
 
-        response = client.post(
+        response = await async_client.post(
             "/api/v1/tickets/",
             json=payload,
             headers=auth_headers(user_id=1),
@@ -74,7 +74,7 @@ class TestTicketIntegration:
         ticket_no = created_ticket["ticket_no"]
 
         # 查詢工單
-        response = client.get(
+        response = await async_client.get(
             f"/api/v1/tickets/{ticket_id}",
             headers=auth_headers(user_id=1),
         )
@@ -86,7 +86,7 @@ class TestTicketIntegration:
 
     @pytest.mark.asyncio
     async def test_create_ticket_with_categories_and_labels(
-        self, client, auth_headers, async_db_session, sample_categories, sample_labels
+        self, async_client, auth_headers, async_db_session, sample_categories, sample_labels
     ):
         """測試建立含有分類和標籤的工單"""
         # 準備數據
@@ -101,7 +101,7 @@ class TestTicketIntegration:
             "label_ids": label_ids,
         }
 
-        response = client.post(
+        response = await async_client.post(
             "/api/v1/tickets/",
             json=payload,
             headers=auth_headers(user_id=1),
@@ -115,10 +115,10 @@ class TestTicketIntegration:
         assert len(ticket["labels"]) == 1
 
     @pytest.mark.asyncio
-    async def test_list_tickets_pagination(self, client, auth_headers, sample_tickets):
+    async def test_list_tickets_pagination(self, async_client, auth_headers, sample_tickets):
         """測試工單列表分頁"""
         # 查詢第一頁
-        response = client.get(
+        response = await async_client.get(
             "/api/v1/tickets/?page=1&page_size=2",
             headers=auth_headers(user_id=1),
         )
@@ -130,10 +130,10 @@ class TestTicketIntegration:
         assert data["page_size"] == 2
 
     @pytest.mark.asyncio
-    async def test_list_tickets_filtering(self, client, auth_headers, sample_tickets):
+    async def test_list_tickets_filtering(self, async_client, auth_headers, sample_tickets):
         """測試工單列表篩選"""
         # 篩選狀態為 DRAFT 的工單
-        response = client.get(
+        response = await async_client.get(
             "/api/v1/tickets/?status=draft",
             headers=auth_headers(user_id=1),
         )
@@ -144,9 +144,9 @@ class TestTicketIntegration:
         assert len(data["items"]) >= 1
 
     @pytest.mark.asyncio
-    async def test_list_tickets_sorting(self, client, auth_headers, sample_tickets):
+    async def test_list_tickets_sorting(self, async_client, auth_headers, sample_tickets):
         """測試工單列表排序"""
-        response = client.get(
+        response = await async_client.get(
             "/api/v1/tickets/?sort_by=created_at&sort_order=asc",
             headers=auth_headers(user_id=1),
         )
@@ -156,13 +156,13 @@ class TestTicketIntegration:
         assert len(data["items"]) > 0
 
     @pytest.mark.asyncio
-    async def test_update_ticket_title(self, client, auth_headers, sample_ticket):
+    async def test_update_ticket_title(self, async_client, auth_headers, sample_ticket):
         """測試更新工單標題"""
         new_title = "Updated Ticket Title"
 
         payload = {"title": new_title}
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}/title",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -173,13 +173,13 @@ class TestTicketIntegration:
         assert updated_ticket["title"] == new_title
 
     @pytest.mark.asyncio
-    async def test_update_ticket_description(self, client, auth_headers, sample_ticket):
+    async def test_update_ticket_description(self, async_client, auth_headers, sample_ticket):
         """測試更新工單描述"""
         new_description = "Updated Description"
 
         payload = {"description": new_description}
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}/description",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -190,13 +190,13 @@ class TestTicketIntegration:
         assert updated_ticket["description"] == new_description
 
     @pytest.mark.asyncio
-    async def test_update_ticket_assignee(self, client, auth_headers, sample_ticket):
+    async def test_update_ticket_assignee(self, async_client, auth_headers, sample_ticket):
         """測試更新工單指派對象"""
         new_assignee = 2
 
         payload = {"assigned_to": new_assignee}
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}/assignee",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -206,11 +206,12 @@ class TestTicketIntegration:
         updated_ticket = response.json()
         assert updated_ticket["assigned_to"] == new_assignee
 
-    def test_update_ticket_labels(self, client, auth_headers, sample_ticket):
+    @pytest.mark.asyncio
+    async def test_update_ticket_labels(self, async_client, auth_headers, sample_ticket):
         """測試更新工單標籤"""
         # 創建測試標籤
         label_payload_1 = {"name": "Test Label 1", "color": "#FF0000", "description": "Test label 1"}
-        label_response_1 = client.post(
+        label_response_1 = await async_client.post(
             "/api/v1/labels/",
             json=label_payload_1,
             headers=auth_headers(user_id=1),
@@ -219,7 +220,7 @@ class TestTicketIntegration:
         label_data_1 = label_response_1.json()
 
         label_payload_2 = {"name": "Test Label 2", "color": "#00FF00", "description": "Test label 2"}
-        label_response_2 = client.post(
+        label_response_2 = await async_client.post(
             "/api/v1/labels/",
             json=label_payload_2,
             headers=auth_headers(user_id=1),
@@ -231,7 +232,7 @@ class TestTicketIntegration:
 
         payload = {"label_ids": new_label_ids}
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}/labels",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -241,7 +242,8 @@ class TestTicketIntegration:
         updated_ticket = response.json()
         assert len(updated_ticket["labels"]) == 2
 
-    def test_full_ticket_update(self, client, auth_headers, sample_ticket):
+    @pytest.mark.asyncio
+    async def test_full_ticket_update(self, async_client, auth_headers, sample_ticket):
         """測試全量更新工單"""
         payload = {
             "title": "Fully Updated Title",
@@ -249,7 +251,7 @@ class TestTicketIntegration:
             "priority": "low",
         }
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -262,9 +264,9 @@ class TestTicketIntegration:
         assert updated_ticket["priority"] == "low"
 
     @pytest.mark.asyncio
-    async def test_get_ticket_by_ticket_no(self, client, auth_headers, sample_ticket):
+    async def test_get_ticket_by_ticket_no(self, async_client, auth_headers, sample_ticket):
         """測試按 ticket_no 查詢工單"""
-        response = client.get(
+        response = await async_client.get(
             f"/api/v1/tickets/by-ticket-no/{sample_ticket.ticket_no}",
             headers=auth_headers(user_id=1),
         )
@@ -279,11 +281,11 @@ class TestTicketPermissions:
     """工單權限相關的集成測試"""
 
     @pytest.mark.asyncio
-    async def test_non_creator_cannot_update(self, client, auth_headers, sample_ticket):
+    async def test_non_creator_cannot_update(self, async_client, auth_headers, sample_ticket):
         """測試非建立者無法更新工單"""
         payload = {"title": "Unauthorized Update"}
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}/title",
             json=payload,
             headers=auth_headers(user_id=999),  # 非建立者
@@ -292,11 +294,11 @@ class TestTicketPermissions:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_creator_can_update(self, client, auth_headers, sample_ticket):
+    async def test_creator_can_update(self, async_client, auth_headers, sample_ticket):
         """測試建立者可以更新工單"""
         payload = {"title": "Creator Update"}
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}/title",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -312,9 +314,9 @@ class TestTicketErrorHandling:
     """錯誤處理的集成測試"""
 
     @pytest.mark.asyncio
-    async def test_get_nonexistent_ticket(self, client, auth_headers):
+    async def test_get_nonexistent_ticket(self, async_client, auth_headers):
         """測試查詢不存在的工單"""
-        response = client.get(
+        response = await async_client.get(
             "/api/v1/tickets/99999",
             headers=auth_headers(user_id=1),
         )
@@ -322,9 +324,9 @@ class TestTicketErrorHandling:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_get_nonexistent_ticket_by_no(self, client, auth_headers):
+    async def test_get_nonexistent_ticket_by_no(self, async_client, auth_headers):
         """測試按不存在的 ticket_no 查詢"""
-        response = client.get(
+        response = await async_client.get(
             "/api/v1/tickets/by-ticket-no/TIC-99999999-999",
             headers=auth_headers(user_id=1),
         )
@@ -332,11 +334,11 @@ class TestTicketErrorHandling:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_update_nonexistent_ticket(self, client, auth_headers):
+    async def test_update_nonexistent_ticket(self, async_client, auth_headers):
         """測試更新不存在的工單"""
         payload = {"title": "Updated"}
 
-        response = client.patch(
+        response = await async_client.patch(
             "/api/v1/tickets/99999/title",
             json=payload,
             headers=auth_headers(user_id=1),
@@ -345,14 +347,14 @@ class TestTicketErrorHandling:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_invalid_priority_enum(self, client, auth_headers):
+    async def test_invalid_priority_enum(self, async_client, auth_headers):
         """測試無效的優先級列舉值"""
         payload = {
             "title": "Test",
             "priority": "INVALID_PRIORITY",
         }
 
-        response = client.post(
+        response = await async_client.post(
             "/api/v1/tickets/",
             json=payload,
             headers=auth_headers(user_id=1),
@@ -361,13 +363,13 @@ class TestTicketErrorHandling:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_empty_title(self, client, auth_headers):
+    async def test_empty_title(self, async_client, auth_headers):
         """測試空標題"""
         payload = {
             "title": "",
         }
 
-        response = client.post(
+        response = await async_client.post(
             "/api/v1/tickets/",
             json=payload,
             headers=auth_headers(user_id=1),
@@ -376,13 +378,13 @@ class TestTicketErrorHandling:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_title_exceeds_max_length(self, client, auth_headers):
+    async def test_title_exceeds_max_length(self, async_client, auth_headers):
         """測試標題超過最大長度"""
         payload = {
             "title": "x" * 201,  # max_length=200
         }
 
-        response = client.post(
+        response = await async_client.post(
             "/api/v1/tickets/",
             json=payload,
             headers=auth_headers(user_id=1),
@@ -396,7 +398,7 @@ class TestTicketRelationships:
     """工單關聯資料的集成測試"""
 
     @pytest.mark.asyncio
-    async def test_ticket_with_multiple_categories(self, client, auth_headers, async_db_session, sample_categories):
+    async def test_ticket_with_multiple_categories(self, async_client, auth_headers, async_db_session, sample_categories):
         """測試工單含有多個分類"""
         category_ids = [c.id for c in sample_categories]
 
@@ -406,7 +408,7 @@ class TestTicketRelationships:
             "label_ids": [],
         }
 
-        response = client.post(
+        response = await async_client.post(
             "/api/v1/tickets/",
             json=payload,
             headers=auth_headers(user_id=1),
@@ -416,11 +418,15 @@ class TestTicketRelationships:
         ticket = response.json()
         assert len(ticket["categories"]) == len(sample_categories)
 
-    def test_update_ticket_categories(self, client, auth_headers, sample_ticket):
+    @pytest.mark.asyncio
+    async def test_update_ticket_categories(self, async_client, auth_headers, sample_ticket):
         """測試更新工單分類"""
-        # 創建一個測試分類
-        category_payload = {"name": "Test Category for Update", "description": "Test category"}
-        category_response = client.post(
+        import uuid
+
+        # 創建一個測試分類，使用唯一名稱
+        unique_name = f"Test Category for Update {uuid.uuid4().hex[:8]}"
+        category_payload = {"name": unique_name, "description": "Test category"}
+        category_response = await async_client.post(
             "/api/v1/categories/",
             json=category_payload,
             headers=auth_headers(user_id=1),
@@ -433,7 +439,7 @@ class TestTicketRelationships:
             "category_ids": [category_id],
         }
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -443,11 +449,12 @@ class TestTicketRelationships:
         updated_ticket = response.json()
         assert len(updated_ticket["categories"]) == 1
 
-    def test_remove_all_labels(self, client, auth_headers, sample_ticket):
+    @pytest.mark.asyncio
+    async def test_remove_all_labels(self, async_client, auth_headers, sample_ticket):
         """測試移除工單所有標籤"""
         payload = {"label_ids": []}
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}/labels",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -462,14 +469,15 @@ class TestTicketRelationships:
 class TestTicketPartialUpdates:
     """部分更新相關的集成測試"""
 
-    def test_partial_update_only_title(self, client, auth_headers, sample_ticket):
+    @pytest.mark.asyncio
+    async def test_partial_update_only_title(self, async_client, auth_headers, sample_ticket):
         """測試只更新標題（其他欄位保持不變）"""
         original_description = sample_ticket.description
         new_title = "Only Title Changed"
 
         payload = {"title": new_title}
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
@@ -480,7 +488,8 @@ class TestTicketPartialUpdates:
         assert updated_ticket["title"] == new_title
         assert updated_ticket["description"] == original_description
 
-    def test_partial_update_priority_and_description(self, client, auth_headers, sample_ticket):
+    @pytest.mark.asyncio
+    async def test_partial_update_priority_and_description(self, async_client, auth_headers, sample_ticket):
         """測試只更新優先級和描述"""
         new_priority = "low"
         new_description = "Only These Fields Changed"
@@ -490,7 +499,7 @@ class TestTicketPartialUpdates:
             "description": new_description,
         }
 
-        response = client.patch(
+        response = await async_client.patch(
             f"/api/v1/tickets/{sample_ticket.id}",
             json=payload,
             headers=auth_headers(user_id=sample_ticket.created_by),
