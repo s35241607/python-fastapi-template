@@ -1,0 +1,15 @@
+.venv
+__pycache__/
+*.pyc
+tests/
+*.log
+.git/
+.idea/
+.vscode/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+.DS_Store
+uploads/
+logs/

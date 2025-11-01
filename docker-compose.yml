@@ -1,0 +1,17 @@
+
+services:
+  fastapi:
+    build: .
+    container_name: ticket_fastapi
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - postgresql_default
+
+networks:
+  postgresql_default:
+    external: true
