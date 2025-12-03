@@ -17,7 +17,7 @@ from app.models.ticket_template import ticket_template_categories
 
 class Category(Base):
     __tablename__ = "categories"
-    __table_args__ = {"schema": settings.db_schema}
+    __table_args__ = {"schema": settings.DB_SCHEMA}
 
     id = Column(BigInteger, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)  # Added unique=True

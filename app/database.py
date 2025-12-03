@@ -4,11 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.config import settings
 
-# 創建 async engine - 如果沒有設定，使用 SQLite 進行測試
-database_url = settings.database_url or "sqlite+aiosqlite:///./test.db"
+# 創建 async engine
+if settings.DATABASE_URL is None:
+    raise ValueError(
+        "DATABASE_URL must be set in the .env file or as an environment variable, pointing to a PostgreSQL database."
+    )
+database_url = settings.DATABASE_URL
 engine = create_async_engine(
     database_url,
-    echo=settings.debug,
+    echo=settings.DEBUG,
     future=True,
     pool_pre_ping=True,  # 檢查連接健康
     pool_recycle=3600,  # 每小時回收連接

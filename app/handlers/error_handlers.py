@@ -175,7 +175,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     logger.error("Unhandled exception in %s %s", request.method, request.url.path, exc_info=exc)
 
     # In production, don't expose internal error details
-    error_message = str(exc) if settings.debug else "An internal error occurred"
+    error_message = str(exc) if settings.DEBUG else "An internal error occurred"
 
     response = ErrorResponse(
         message="Internal Server Error",

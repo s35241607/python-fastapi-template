@@ -17,13 +17,13 @@ from app.models.enums import ApprovalStepType  # Added
 
 class ApprovalTemplateStep(Base):
     __tablename__ = "approval_template_steps"
-    __table_args__ = {"schema": settings.db_schema}  # Updated schema
+    __table_args__ = {"schema": settings.DB_SCHEMA}  # Updated schema
 
     id = Column(BigInteger, primary_key=True)
-    approval_template_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.approval_templates.id", ondelete="CASCADE"))
+    approval_template_id = Column(BigInteger, ForeignKey(f"{settings.DB_SCHEMA}.approval_templates.id", ondelete="CASCADE"))
     step_order = Column(Integer, nullable=False)
     approval_type = Column(
-        Enum(ApprovalStepType, name="approval_step_type", schema=settings.db_schema), nullable=False
+        Enum(ApprovalStepType, name="approval_step_type", schema=settings.DB_SCHEMA), nullable=False
     )  # Added
 
     # Removed role_id, user_id, is_mandatory

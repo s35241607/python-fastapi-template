@@ -16,11 +16,11 @@ from app.models.enums import ApprovalProcessStepStatus
 
 class ApprovalProcessStepApprover(Base):
     __tablename__ = "approval_process_step_approvers"
-    __table_args__ = {"schema": settings.db_schema}
+    __table_args__ = {"schema": settings.DB_SCHEMA}
 
     id = Column(BigInteger, primary_key=True)
     approval_process_step_id = Column(
-        BigInteger, ForeignKey(f"{settings.db_schema}.approval_process_steps.id", ondelete="CASCADE"), nullable=False
+        BigInteger, ForeignKey(f"{settings.DB_SCHEMA}.approval_process_steps.id", ondelete="CASCADE"), nullable=False
     )
 
     # Who is assigned?
@@ -33,7 +33,7 @@ class ApprovalProcessStepApprover(Base):
 
     # What was the result?
     status = Column(
-        Enum(ApprovalProcessStepStatus, name="approval_process_step_status", schema=settings.db_schema),
+        Enum(ApprovalProcessStepStatus, name="approval_process_step_status", schema=settings.DB_SCHEMA),
         nullable=False,
         default=ApprovalProcessStepStatus.PENDING,
     )

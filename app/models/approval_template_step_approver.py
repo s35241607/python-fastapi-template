@@ -16,12 +16,12 @@ class ApprovalTemplateStepApprover(Base):
     __tablename__ = "approval_template_step_approvers"
     __table_args__ = (
         UniqueConstraint("approval_template_step_id", "role_id", "user_id"),
-        {"schema": settings.db_schema},
+        {"schema": settings.DB_SCHEMA},
     )
 
     id = Column(BigInteger, primary_key=True)
     approval_template_step_id = Column(
-        BigInteger, ForeignKey(f"{settings.db_schema}.approval_template_steps.id", ondelete="CASCADE"), nullable=False
+        BigInteger, ForeignKey(f"{settings.DB_SCHEMA}.approval_template_steps.id", ondelete="CASCADE"), nullable=False
     )
     role_id = Column(BigInteger)
     user_id = Column(BigInteger)

@@ -18,29 +18,39 @@ from app.models.base import Base
 ticket_template_categories = Table(
     "ticket_template_categories",
     Base.metadata,
-    Column("ticket_template_id", BigInteger, ForeignKey(f"{settings.db_schema}.ticket_templates.id", ondelete="CASCADE"), primary_key=True),
-    Column("category_id", BigInteger, ForeignKey(f"{settings.db_schema}.categories.id", ondelete="CASCADE"), primary_key=True),
-    schema=settings.db_schema,
+    Column(
+        "ticket_template_id",
+        BigInteger,
+        ForeignKey(f"{settings.DB_SCHEMA}.ticket_templates.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column("category_id", BigInteger, ForeignKey(f"{settings.DB_SCHEMA}.categories.id", ondelete="CASCADE"), primary_key=True),
+    schema=settings.DB_SCHEMA,
 )
 
 ticket_template_labels = Table(
     "ticket_template_labels",
     Base.metadata,
-    Column("ticket_template_id", BigInteger, ForeignKey(f"{settings.db_schema}.ticket_templates.id", ondelete="CASCADE"), primary_key=True),
-    Column("label_id", BigInteger, ForeignKey(f"{settings.db_schema}.labels.id", ondelete="CASCADE"), primary_key=True),
-    schema=settings.db_schema,
+    Column(
+        "ticket_template_id",
+        BigInteger,
+        ForeignKey(f"{settings.DB_SCHEMA}.ticket_templates.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column("label_id", BigInteger, ForeignKey(f"{settings.DB_SCHEMA}.labels.id", ondelete="CASCADE"), primary_key=True),
+    schema=settings.DB_SCHEMA,
 )
 
 
 class TicketTemplate(Base):
     __tablename__ = "ticket_templates"
-    __table_args__ = {"schema": settings.db_schema}
+    __table_args__ = {"schema": settings.DB_SCHEMA}
 
     id = Column(BigInteger, primary_key=True)
     name = Column(String(200), nullable=False)
     description = Column(Text)
     custom_fields_schema = Column(JSON)
-    approval_template_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.approval_templates.id"))
+    approval_template_id = Column(BigInteger, ForeignKey(f"{settings.DB_SCHEMA}.approval_templates.id"))
     created_by = Column(BigInteger)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_by = Column(BigInteger)

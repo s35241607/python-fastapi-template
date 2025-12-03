@@ -17,18 +17,18 @@ from app.models.enums import ApprovalProcessStepStatus, ApprovalStepType  # Adde
 
 class ApprovalProcessStep(Base):
     __tablename__ = "approval_process_steps"
-    __table_args__ = {"schema": settings.db_schema}
+    __table_args__ = {"schema": settings.DB_SCHEMA}
 
     id = Column(BigInteger, primary_key=True)
-    approval_process_id = Column(BigInteger, ForeignKey(f"{settings.db_schema}.approval_processes.id", ondelete="CASCADE"))
+    approval_process_id = Column(BigInteger, ForeignKey(f"{settings.DB_SCHEMA}.approval_processes.id", ondelete="CASCADE"))
     step_order = Column(Integer, nullable=False)
     approval_type = Column(
-        Enum(ApprovalStepType, name="approval_step_type", schema=settings.db_schema), nullable=False
+        Enum(ApprovalStepType, name="approval_step_type", schema=settings.DB_SCHEMA), nullable=False
     )  # Added
 
     # This status is the aggregate status of the step, determined by the approvers' statuses and the approval_type
     status = Column(
-        Enum(ApprovalProcessStepStatus, name="approval_process_step_status", schema=settings.db_schema),
+        Enum(ApprovalProcessStepStatus, name="approval_process_step_status", schema=settings.DB_SCHEMA),
         nullable=False,
         default=ApprovalProcessStepStatus.PENDING,
     )

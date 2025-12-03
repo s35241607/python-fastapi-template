@@ -17,6 +17,7 @@ dependencies = [
   "passlib[bcrypt]>=1.7.4",
   "python-multipart>=0.0.6",
   "aiofiles>=23.2.1",
+  "aiosmtplib>=5.0.0",
 ]
 
 [project.optional-dependencies]

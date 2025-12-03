@@ -17,9 +17,9 @@ from app.routers import attachment_router, category_router, devtools_router, lab
 
 
 app = FastAPI(
-    title=settings.app_name,
-    version=settings.app_version,
-    debug=settings.debug,
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    debug=settings.DEBUG,
     security=[{"BearerAuth": []}],  # Add global security for Swagger UI
     openapi_extra={
         "components": {

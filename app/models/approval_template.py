@@ -14,7 +14,7 @@ from app.models.base import Base
 
 class ApprovalTemplate(Base):
     __tablename__ = "approval_templates"
-    __table_args__ = {"schema": settings.db_schema}
+    __table_args__ = {"schema": settings.DB_SCHEMA}
 
     id = Column(BigInteger, primary_key=True)
     name = Column(String(200), nullable=False)
