@@ -1,10 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from loguru import logger
 
 from app.config import settings
+from app.core.logging import setup_logging
 from app.handlers.error_handlers import register_exception_handlers
+from app.middleware.logging_middleware import RequestLoggingMiddleware
 from app.routers import attachment_router, category_router, devtools_router, label_router, public_router, ticket_router
+
+# Initialize logging system BEFORE anything else
+setup_logging()
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -39,6 +45,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # Register exception handlers BEFORE adding middleware
 register_exception_handlers(app)
 
+# Request logging middleware (should be outermost for accurate timing)
+app.add_middleware(RequestLoggingMiddleware)
 
 # CORS 中間件設定
 app.add_middleware(
@@ -61,8 +69,17 @@ app.include_router(label_router, prefix="/api/v1/labels", tags=["labels"])
 app.include_router(ticket_router, prefix="/api/v1/tickets", tags=["tickets"])
 app.include_router(attachment_router, prefix="/api/v1/attachments", tags=["attachments"])
 
+logger.info(
+    "Application startup complete",
+    app_name=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    debug=settings.DEBUG,
+)
+
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Disable uvicorn's default logging config to use our Loguru setup
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_config=None)
+

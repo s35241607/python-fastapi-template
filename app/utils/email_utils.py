@@ -1,13 +1,10 @@
-import logging
 from dataclasses import dataclass
 from email.message import EmailMessage
 
 import aiosmtplib
+from loguru import logger
 
 from app.config import settings
-
-# 取得 logger 實例，通常以模組名稱命名
-logger = logging.getLogger(__name__)
 
 
 class EmailSenderError(Exception):

@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-import logging
 from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from loguru import logger
 from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.schemas.response import ErrorDetail, ErrorResponse
-
-logger = logging.getLogger(__name__)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -170,9 +168,28 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle uncaught exceptions and ensure a consistent response payload."""
+    import asyncio
+
+    from app.core.alerting import AlertLevel, send_alert
+    from app.core.logging import get_correlation_id
 
     # Log the full exception details for debugging
     logger.error("Unhandled exception in %s %s", request.method, request.url.path, exc_info=exc)
+
+    # Send alert to Mattermost (non-blocking)
+    correlation_id = get_correlation_id()
+    asyncio.create_task(
+        send_alert(
+            title="Unhandled Exception",
+            message=f"```\n{exc.__class__.__name__}: {exc!s}\n```",
+            level=AlertLevel.CRITICAL,
+            fields={
+                "path": request.url.path,
+                "method": request.method,
+                "correlation_id": correlation_id or "-",
+            },
+        )
+    )
 
     # In production, don't expose internal error details
     error_message = str(exc) if settings.DEBUG else "An internal error occurred"

@@ -17,9 +17,20 @@ class Settings(BaseSettings):
     SMTP_TLS: bool = False
     MAIL_FROM: str = "noreply@example.com"
 
-    # Mail Test Mode Settings
-    MAIL_TEST_MODE: bool = False
-    SYSTEM_OWNER_EMAIL: list[str] = ["admin@example.com"]
+    # Logging Settings
+    LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    LOG_JSON_FORMAT: bool = False  # True for production (structured JSON)
+    LOG_FILE_PATH: str | None = "logs/app.log"  # None to disable file logging
+    LOG_ROTATION: str = "10 MB"  # File size or time: "10 MB", "00:00", "1 week"
+    LOG_RETENTION: str = "7 days"  # How long to keep old logs
+
+    # Environment
+    ENVIRONMENT: str = "development"  # development, staging, production
+
+    # Mattermost Alerting
+    MATTERMOST_WEBHOOK_URL: str | None = None
+    MATTERMOST_CHANNEL: str | None = None  # Override default webhook channel
+    ALERT_ENABLED: bool = True  # Enable/disable alerting
 
     model_config = SettingsConfigDict(env_file=".env")
 
