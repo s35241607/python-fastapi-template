@@ -81,6 +81,19 @@ def drop_color_message_key(
     return event_dict
 
 
+def inject_app_context(
+    logger: WrappedLogger, method_name: str, event_dict: EventDict
+) -> EventDict:
+    """
+    Inject static application context so that every log line has standard fields
+    for indexing in Grafana Loki (e.g. app_name, environment).
+    """
+    event_dict["app_name"] = settings.APP_NAME
+    event_dict["app_version"] = settings.APP_VERSION
+    event_dict["environment"] = settings.ENVIRONMENT
+    return event_dict
+
+
 def setup_logging() -> None:
     """
     Initialize the logging system with structlog.
@@ -102,7 +115,8 @@ def setup_logging() -> None:
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.PositionalArgumentsFormatter(),
-        add_request_context,
+        inject_app_context,  # Add static app info (env, version)
+        add_request_context,  # Add dynamic request info (request_id, user_id)
         structlog.stdlib.ExtraAdder(),
         drop_color_message_key,
         structlog.processors.TimeStamper(fmt="iso"),
