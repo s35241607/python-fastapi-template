@@ -18,8 +18,10 @@ dependencies = [
   "python-multipart>=0.0.6",
   "aiofiles>=23.2.1",
   "aiosmtplib>=5.0.0",
-  "loguru>=0.7.0",
   "httpx>=0.25.0",
+  "structlog>=24.0.0",
+  "asgi-correlation-id>=4.3.0",
+  "gunicorn>=21.0.0",
 ]
 
 [project.optional-dependencies]

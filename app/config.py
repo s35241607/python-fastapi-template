@@ -17,12 +17,9 @@ class Settings(BaseSettings):
     SMTP_TLS: bool = False
     MAIL_FROM: str = "noreply@example.com"
 
-    # Logging Settings
+    # Logging Settings (structlog)
     LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-    LOG_JSON_FORMAT: bool = False  # True for production (structured JSON)
-    LOG_FILE_PATH: str | None = "logs/app.log"  # None to disable file logging
-    LOG_ROTATION: str = "10 MB"  # File size or time: "10 MB", "00:00", "1 week"
-    LOG_RETENTION: str = "7 days"  # How long to keep old logs
+    LOG_RENDER_JSON: bool = False  # True for production (Loki/Grafana)
 
     # Environment
     ENVIRONMENT: str = "development"  # development, staging, production

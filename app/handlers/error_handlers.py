@@ -1,3 +1,13 @@
+"""
+Global exception handlers for the FastAPI application.
+
+Provides:
+- Consistent error response format across all exception types
+- Structured logging with request context for debugging
+- Safe request body preview (avoiding large files/binary content)
+- Integration with structlog and asgi-correlation-id
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
@@ -6,12 +16,37 @@ from typing import Any, cast
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from loguru import logger
 from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
+from app.core.structlog_config import get_logger
 from app.schemas.response import ErrorDetail, ErrorResponse
+
+log = get_logger(__name__)
+
+
+# Headers that should be filtered from logs (security)
+SENSITIVE_HEADERS: set[str] = {
+    "authorization",
+    "cookie",
+    "x-api-key",
+    "x-auth-token",
+    "x-csrf-token",
+    "proxy-authorization",
+}
+
+# Content types that should not have body logged
+BINARY_CONTENT_TYPES: tuple[str, ...] = (
+    "multipart/form-data",
+    "application/octet-stream",
+    "image/",
+    "video/",
+    "audio/",
+    "application/zip",
+    "application/pdf",
+    "application/gzip",
+)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -51,6 +86,20 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
         errors=errors,
     )
 
+    # Get body preview for debugging validation errors
+    body_preview = await _safe_get_body_preview(request)
+
+    # Log validation error with context (request_id/user_id auto-injected by processor)
+    log.warning(
+        "Validation error",
+        method=request.method,
+        path=str(request.url.path),
+        error_count=len(errors),
+        errors=[e.model_dump() for e in errors[:5]],  # Log first 5 errors
+        request_body=body_preview,  # Include body for debugging
+        content_type=request.headers.get("content-type"),
+    )
+
     return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response.model_dump())
 
 
@@ -87,6 +136,13 @@ async def integrity_error_handler(request: Request, exc: Exception) -> JSONRespo
             ],
         )
 
+        log.warning(
+            "Unique constraint violation",
+            method=request.method,
+            path=str(request.url.path),
+            field=field_name,
+        )
+
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=response.model_dump())
 
     elif error_code == "23503":  # foreign_key_violation
@@ -100,6 +156,12 @@ async def integrity_error_handler(request: Request, exc: Exception) -> JSONRespo
                     type="foreign_key_violation",
                 )
             ],
+        )
+
+        log.warning(
+            "Foreign key constraint violation",
+            method=request.method,
+            path=str(request.url.path),
         )
 
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response.model_dump())
@@ -127,6 +189,13 @@ async def integrity_error_handler(request: Request, exc: Exception) -> JSONRespo
             ],
         )
 
+        log.warning(
+            "Not null constraint violation",
+            method=request.method,
+            path=str(request.url.path),
+            column=column_name,
+        )
+
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response.model_dump())
 
     # For other integrity errors, treat as bad request
@@ -140,6 +209,13 @@ async def integrity_error_handler(request: Request, exc: Exception) -> JSONRespo
                 type="integrity_error",
             )
         ],
+    )
+
+    log.warning(
+        "Database integrity error",
+        method=request.method,
+        path=str(request.url.path),
+        error_code=error_code,
     )
 
     return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=response.model_dump())
@@ -160,6 +236,24 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
             errors=errors,
         )
 
+        # Log 4xx at warning level, 5xx at error level
+        if http_exc.status_code >= 500:
+            log.error(
+                "HTTP exception",
+                method=request.method,
+                path=str(request.url.path),
+                status_code=http_exc.status_code,
+                message=message,
+            )
+        elif http_exc.status_code >= 400:
+            log.warning(
+                "HTTP exception",
+                method=request.method,
+                path=str(request.url.path),
+                status_code=http_exc.status_code,
+                message=message,
+            )
+
         return JSONResponse(status_code=http_exc.status_code, content=response.model_dump())
 
     # Fallback for other exceptions (shouldn't happen but just in case)
@@ -168,27 +262,23 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle uncaught exceptions and ensure a consistent response payload."""
-    import asyncio
 
-    from app.core.alerting import AlertLevel, send_alert
-    from app.core.logging import get_correlation_id
+    # Safely get request body preview
+    body_preview = await _safe_get_body_preview(request)
+
+    # Filter sensitive headers
+    safe_headers = _filter_sensitive_headers(dict(request.headers))
 
     # Log the full exception details for debugging
-    logger.error("Unhandled exception in %s %s", request.method, request.url.path, exc_info=exc)
-
-    # Send alert to Mattermost (non-blocking)
-    correlation_id = get_correlation_id()
-    asyncio.create_task(
-        send_alert(
-            title="Unhandled Exception",
-            message=f"```\n{exc.__class__.__name__}: {exc!s}\n```",
-            level=AlertLevel.CRITICAL,
-            fields={
-                "path": request.url.path,
-                "method": request.method,
-                "correlation_id": correlation_id or "-",
-            },
-        )
+    log.exception(
+        "Unhandled exception",
+        method=request.method,
+        path=str(request.url),
+        query_params=dict(request.query_params),
+        request_body=body_preview,
+        headers=safe_headers,
+        client_ip=_get_client_ip(request),
+        exception_type=type(exc).__name__,
     )
 
     # In production, don't expose internal error details
@@ -207,6 +297,85 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     )
 
     return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response.model_dump())
+
+
+async def _safe_get_body_preview(request: Request, max_bytes: int = 2048) -> str | None:
+    """
+    Safely get a preview of the request body.
+
+    This function:
+    - Skips binary content types (file uploads, images, etc.)
+    - Limits the size to prevent memory issues
+    - Handles encoding errors gracefully
+    - Returns a descriptive message for skipped content
+
+    Args:
+        request: The request object
+        max_bytes: Maximum number of bytes to read (default 2KB)
+
+    Returns:
+        A string preview of the body, or a descriptive skip message
+    """
+    content_type = request.headers.get("content-type", "")
+
+    # Skip binary content types
+    for binary_type in BINARY_CONTENT_TYPES:
+        if binary_type in content_type.lower():
+            return f"[skipped: {content_type}]"
+
+    # Check content length to avoid reading huge bodies
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            length = int(content_length)
+            if length > max_bytes * 2:  # Allow some buffer
+                return f"[skipped: body too large ({length} bytes)]"
+        except ValueError:
+            pass
+
+    try:
+        # Read the body (this consumes the stream, but for error logging it's acceptable)
+        body = await request.body()
+
+        if not body:
+            return None
+
+        if len(body) > max_bytes:
+            return body[:max_bytes].decode("utf-8", errors="replace") + f"...[truncated, total {len(body)} bytes]"
+
+        return body.decode("utf-8", errors="replace")
+
+    except Exception as e:
+        return f"[failed to read body: {type(e).__name__}]"
+
+
+def _filter_sensitive_headers(headers: dict[str, str]) -> dict[str, str]:
+    """
+    Filter out sensitive headers from the dictionary.
+
+    Replaces sensitive values with '[REDACTED]' to prevent
+    accidental credential leakage in logs.
+    """
+    return {
+        key: "[REDACTED]" if key.lower() in SENSITIVE_HEADERS else value
+        for key, value in headers.items()
+    }
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP from request, considering proxy headers."""
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip
+
+    if request.client:
+        return request.client.host
+
+    return "unknown"
 
 
 def _prepare_http_exception_payload(detail: Any) -> tuple[str, list[ErrorDetail]]:

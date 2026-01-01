@@ -19,5 +19,6 @@ COPY . .
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# 預設啟動指令
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 預設啟動指令 - 使用 Gunicorn 搭配 Uvicorn workers
+# 可透過環境變數 GUNICORN_WORKERS 調整 worker 數量
+CMD ["uv", "run", "gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]

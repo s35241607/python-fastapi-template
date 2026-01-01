@@ -5,10 +5,17 @@ services:
     container_name: ticket_fastapi
     env_file:
       - .env
+    environment:
+      # Application settings for production
+      - DEBUG=false
+      - ENVIRONMENT=production
+      # Gunicorn settings
+      - GUNICORN_WORKERS=4
+      # Logging settings (JSON for Loki/Promtail)
+      - LOG_RENDER_JSON=true
+      - LOG_LEVEL=INFO
     ports:
       - "8000:8000"
-    volumes:
-      - ./logs:/app/logs
     networks:
       - postgresql_default
 
